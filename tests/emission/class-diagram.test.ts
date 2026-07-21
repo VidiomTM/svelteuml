@@ -667,6 +667,40 @@ describe("renderClassDiagram", () => {
 		expect(result).toContain("ServiceB");
 	});
 
+	it("resolves edges between grouped nodes to container-prefixed ids", () => {
+		const symbols = makeEmptySymbolTable({
+			classes: [
+				{
+					kind: "class",
+					name: "ServiceA",
+					filePath: "/src/lib/services/a.ts",
+					extends: undefined,
+					implements: [],
+					members: [],
+					isGeneric: false,
+					typeParams: [],
+					group: "core",
+				},
+				{
+					kind: "class",
+					name: "ServiceB",
+					filePath: "/src/lib/services/b.ts",
+					extends: undefined,
+					implements: [],
+					members: [],
+					isGeneric: false,
+					typeParams: [],
+					group: "core",
+				},
+			],
+		});
+		const edges = createEdgeSet([
+			{ source: "/src/lib/services/a.ts", target: "/src/lib/services/b.ts", type: "dependency" },
+		]);
+		const result = renderClassDiagram(symbols, edges, DEFAULT_DIAGRAM_OPTIONS);
+		expect(result).toContain("core.ServiceA -> core.ServiceB");
+	});
+
 	it("renders grouped and ungrouped symbols separately", () => {
 		const symbols = makeEmptySymbolTable({
 			classes: [

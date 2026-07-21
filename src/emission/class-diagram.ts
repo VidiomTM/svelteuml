@@ -78,9 +78,12 @@ function renderGroupedSymbols(lines: string[], symbols: SymbolTable, ctx: Render
 	}
 }
 
-function registerNode(ctx: RenderContext, name: string): string {
+function registerNode(ctx: RenderContext, name: string, filePath?: string): string {
 	const id = `${ctx.prefix}${sanitizeId(name)}`;
 	ctx.nodeIds.set(name, id);
+	// Also override the file-path key so edges resolved by path point at the
+	// container-prefixed id, not the non-prefixed placeholder from seedNameMap.
+	if (filePath) ctx.nodeIds.set(normalizeFilePath(filePath, ctx.options.targetDir), id);
 	return sanitizeId(name);
 }
 
@@ -110,14 +113,14 @@ function renderSymbolsBlock(
 			if (ctx.declared.has(comp.name)) continue;
 			ctx.declared.add(comp.name);
 			const key = `${comp.filePath}::${comp.name}`;
-			renderComponent(lines, comp.name, propMap.get(key) ?? [], ctx, indent);
+			renderComponent(lines, comp.name, propMap.get(key) ?? [], ctx, indent, comp.filePath);
 		}
 	}
 
 	for (const fn of [...symbols.functions].sort((a, b) => a.name.localeCompare(b.name))) {
 		if (ctx.declared.has(fn.name)) continue;
 		ctx.declared.add(fn.name);
-		const local = registerNode(ctx, fn.name);
+		const local = registerNode(ctx, fn.name, fn.filePath);
 		const stereotypes = fn.isExported ? ["function", "Exported"] : ["function"];
 		lines.push(`${indent}${local}: {`);
 		lines.push(`${indent}  shape: class`);
@@ -225,7 +228,7 @@ function classStereotypes(cls: ClassSymbol): string[] {
 }
 
 function renderClass(lines: string[], cls: ClassSymbol, ctx: RenderContext, indent: string): void {
-	const local = registerNode(ctx, cls.name);
+	const local = registerNode(ctx, cls.name, cls.filePath);
 	lines.push(`${indent}${local}: {`);
 	lines.push(`${indent}  shape: class`);
 	lines.push(`${indent}  label: "${cls.name}"`);
@@ -253,7 +256,7 @@ function renderStore(
 	ctx: RenderContext,
 	indent: string,
 ): void {
-	const local = registerNode(ctx, store.name);
+	const local = registerNode(ctx, store.name, store.filePath);
 	const stereotype =
 		store.runeKind === "state" ? "state" : store.runeKind === "derived" ? "derived" : "store";
 	const stereotypes = store.isExported ? [stereotype, "Exported"] : [stereotype];
@@ -272,8 +275,9 @@ function renderComponent(
 	props: PropSymbol[],
 	ctx: RenderContext,
 	indent: string,
+	filePath?: string,
 ): void {
-	const local = registerNode(ctx, name);
+	const local = registerNode(ctx, name, filePath);
 	lines.push(`${indent}${local}: {`);
 	lines.push(`${indent}  shape: class`);
 	lines.push(`${indent}  label: "${name}"`);
@@ -293,7 +297,7 @@ function renderRoute(
 	ctx: RenderContext,
 	indent: string,
 ): void {
-	const local = registerNode(ctx, route.name);
+	const local = registerNode(ctx, route.name, route.filePath);
 	const stereotype = sanitizeStereotype(routeStereotype(route));
 	lines.push(`${indent}${local}: {`);
 	lines.push(`${indent}  shape: class`);

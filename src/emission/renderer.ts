@@ -34,7 +34,10 @@ export async function renderD2(
 		if (message.includes("ETIMEDOUT") || message.includes("timed out")) {
 			return { success: false, error: "d2 render timed out" };
 		}
-		if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+		const errno = err as NodeJS.ErrnoException;
+		// Only a spawn ENOENT means the d2 binary is missing. A readFileSync
+		// ENOENT (syscall "open") means d2 ran but produced no output file.
+		if (errno.code === "ENOENT" && errno.syscall?.startsWith("spawn")) {
 			return {
 				success: false,
 				error:
