@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 import { z } from "zod";
 import type { SvelteUMLConfig } from "../types/index.js";
 
+export const DEFAULT_OUTPUT_PATH = "diagram.d2";
+
 const GroupConfigSchema = z.object({
 	pattern: z.string().min(1),
 	name: z.string().min(1),
@@ -17,7 +19,7 @@ const SvelteUMLConfigSchema = z.object({
 		.transform((val) => resolve(val)),
 	outputPath: z
 		.string()
-		.default("diagram.d2")
+		.default(DEFAULT_OUTPUT_PATH)
 		.transform((val) => resolve(val)),
 	aliasOverrides: z.record(z.string(), z.string()).default({}),
 	exclude: z.array(z.string()).default([]),
@@ -52,7 +54,7 @@ export function safeValidateConfig(input: unknown):
 export function getDefaultConfig(targetDir: string): SvelteUMLConfigInput {
 	return {
 		targetDir: resolve(targetDir),
-		outputPath: "diagram.d2",
+		outputPath: DEFAULT_OUTPUT_PATH,
 		aliasOverrides: {},
 		exclude: [],
 		include: [],
@@ -68,7 +70,7 @@ export function mergeConfigs(
 ): SvelteUMLConfigInput {
 	return {
 		targetDir: cliArgs.targetDir ?? fileConfig.targetDir ?? process.cwd(),
-		outputPath: cliArgs.outputPath ?? fileConfig.outputPath ?? "diagram.d2",
+		outputPath: cliArgs.outputPath ?? fileConfig.outputPath ?? DEFAULT_OUTPUT_PATH,
 		aliasOverrides: {
 			...(fileConfig.aliasOverrides ?? {}),
 			...(cliArgs.aliasOverrides ?? {}),
