@@ -44,6 +44,9 @@ export async function renderD2(
 					"d2 executable not found. Install d2 from https://d2lang.com and ensure it is on your PATH.",
 			};
 		}
+		if (errno.code === "ENOENT") {
+			return { success: false, error: "d2 ran but produced no output file" };
+		}
 		return { success: false, error: `d2 render failed: ${message}` };
 	} finally {
 		rmSync(dir, { recursive: true, force: true });
