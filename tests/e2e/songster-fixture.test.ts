@@ -7,14 +7,14 @@ import { runPipeline } from "../../src/cli/runner.js";
 
 const FIXTURE_DIR = resolve(import.meta.dirname, "../fixtures/songster-svelte");
 const testOutputDir = join(tmpdir(), "svelteuml-e2e-songster");
-const OUTPUT_PATH = join(testOutputDir, "songster-output.puml");
+const OUTPUT_PATH = join(testOutputDir, "songster-output.d2");
 
 function makeCliOptions(overrides: Partial<CliOptions> = {}): CliOptions {
 	mkdirSync(testOutputDir, { recursive: true });
 	return {
 		targetDir: FIXTURE_DIR,
 		outputPath: OUTPUT_PATH,
-		format: "text",
+		format: "d2",
 		excludeExternals: false,
 		maxDepth: 0,
 		exclude: [],
@@ -38,16 +38,16 @@ describe("E2E: Songster fixture (real-world dogfood)", () => {
 		expect(result.error).toBeUndefined();
 	});
 
-	it("generates a .puml file", async () => {
+	it("generates a .d2 file", async () => {
 		await runPipeline(makeCliOptions(), {});
 		expect(existsSync(OUTPUT_PATH)).toBe(true);
 	});
 
-	it("produces syntactically valid PlantUML", async () => {
+	it("produces syntactically valid D2", async () => {
 		await runPipeline(makeCliOptions(), {});
 		const content = readFileSync(OUTPUT_PATH, "utf-8");
-		expect(content).toContain("@startuml");
-		expect(content).toContain("@enduml");
+		expect(content).toContain("# ");
+		expect(content).toContain("direction:");
 	});
 
 	it("detects Songster-specific domain types", async () => {
@@ -105,10 +105,10 @@ describe("E2E: Songster fixture (real-world dogfood)", () => {
 	it("detects stereotype tagging on types", async () => {
 		await runPipeline(makeCliOptions(), {});
 		const content = readFileSync(OUTPUT_PATH, "utf-8");
-		expect(content).toContain("<<component>>");
-		expect(content).toContain("<<store>>");
-		expect(content).toContain("<<page>>");
-		expect(content).toContain("<<endpoint>>");
+		expect(content).toMatch(/class: \[?component/);
+		expect(content).toMatch(/class: \[?store/);
+		expect(content).toMatch(/class: \[?page/);
+		expect(content).toMatch(/class: \[?endpoint/);
 	});
 
 	it("reports file count and edge count for the real project", async () => {

@@ -28,7 +28,7 @@ describe("src/config/schema.ts", () => {
 			const result = validateConfig(input);
 
 			expect(result.targetDir).toBe(resolve("/tmp/project"));
-			expect(result.outputPath).toBe(resolve("diagram.puml"));
+			expect(result.outputPath).toBe(resolve("diagram.d2"));
 			expect(result.aliasOverrides).toEqual({});
 			expect(result.exclude).toEqual([]);
 			expect(result.include).toEqual([]);
@@ -39,10 +39,10 @@ describe("src/config/schema.ts", () => {
 		it("resolves outputPath when provided", () => {
 			const input: SvelteUMLConfigInput = {
 				targetDir: "/tmp/project",
-				outputPath: "out/diagram.puml",
+				outputPath: "out/diagram.d2",
 			};
 			const result = validateConfig(input);
-			expect(result.outputPath).toBe(resolve("out/diagram.puml"));
+			expect(result.outputPath).toBe(resolve("out/diagram.d2"));
 		});
 
 		it("applies aliasOverrides from input", () => {
@@ -125,7 +125,7 @@ describe("src/config/schema.ts", () => {
 			expect(result.success).toBe(true);
 			if (result.success) {
 				expect(result.data.targetDir).toBe(resolve("/tmp/project"));
-				expect(result.data.outputPath).toBe(resolve("diagram.puml"));
+				expect(result.data.outputPath).toBe(resolve("diagram.d2"));
 			}
 		});
 
@@ -161,7 +161,7 @@ describe("src/config/schema.ts", () => {
 			const defaults = getDefaultConfig("/tmp/project");
 
 			expect(defaults.targetDir).toBe(resolve("/tmp/project"));
-			expect(defaults.outputPath).toBe("diagram.puml");
+			expect(defaults.outputPath).toBe("diagram.d2");
 			expect(defaults.aliasOverrides).toEqual({});
 			expect(defaults.exclude).toEqual([]);
 			expect(defaults.include).toEqual([]);
@@ -222,7 +222,7 @@ describe("src/config/schema.ts", () => {
 
 		it("falls back to default outputPath when both are absent", () => {
 			const merged = mergeConfigs({}, {});
-			expect(merged.outputPath).toBe("diagram.puml");
+			expect(merged.outputPath).toBe("diagram.d2");
 		});
 
 		it("falls back to maxDepth 0 when both are absent", () => {

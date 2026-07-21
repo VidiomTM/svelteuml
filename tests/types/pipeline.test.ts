@@ -53,16 +53,16 @@ describe("src/types/pipeline.ts", () => {
 	describe("EmissionResult", () => {
 		it("holds class diagram content", () => {
 			const result: EmissionResult = {
-				content: "@startuml\nclass A\n@enduml",
+				content: "# Diagram\nA: { shape: class }",
 				diagramKind: "class",
 			};
 			expect(result.diagramKind).toBe("class");
-			expect(result.content).toContain("@startuml");
+			expect(result.content).toContain("#");
 		});
 
 		it("holds package diagram content", () => {
 			const result: EmissionResult = {
-				content: "@startuml\npackage foo\n@enduml",
+				content: '# Package Diagram\nfoo: { label: "foo" }',
 				diagramKind: "package",
 			};
 			expect(result.diagramKind).toBe("package");
@@ -83,7 +83,7 @@ describe("src/types/pipeline.ts", () => {
 				parseResults: [{ sourceFile: "/src/A.svelte", success: true }],
 			};
 			const emission: EmissionResult = {
-				content: "@startuml\n@enduml",
+				content: "# Diagram",
 				diagramKind: "class",
 			};
 			const result: PipelineResult = { extraction, emission };

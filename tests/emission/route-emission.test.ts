@@ -20,7 +20,7 @@ function makeEmptySymbolTable(overrides: Partial<SymbolTable> = {}): SymbolTable
 }
 
 describe("route stereotype rendering in class diagram", () => {
-	it("renders page route with <<page>> stereotype", () => {
+	it("renders page route with class: page stereotype", () => {
 		const symbols = makeEmptySymbolTable({
 			routes: [
 				{
@@ -34,11 +34,11 @@ describe("route stereotype rendering in class diagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<page>>");
+		expect(result).toContain("class: page");
 		expect(result).toContain("+page");
 	});
 
-	it("renders layout route with <<layout>> stereotype", () => {
+	it("renders layout route with class: layout stereotype", () => {
 		const symbols = makeEmptySymbolTable({
 			routes: [
 				{
@@ -52,10 +52,10 @@ describe("route stereotype rendering in class diagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<layout>>");
+		expect(result).toContain("class: layout");
 	});
 
-	it("renders server route with <<endpoint>> stereotype", () => {
+	it("renders server route with class: endpoint stereotype", () => {
 		const symbols = makeEmptySymbolTable({
 			routes: [
 				{
@@ -69,10 +69,10 @@ describe("route stereotype rendering in class diagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<endpoint>>");
+		expect(result).toContain("class: endpoint");
 	});
 
-	it("renders error route with <<error-page>> stereotype", () => {
+	it("renders error route with class: error_page stereotype", () => {
 		const symbols = makeEmptySymbolTable({
 			routes: [
 				{
@@ -86,10 +86,10 @@ describe("route stereotype rendering in class diagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<error-page>>");
+		expect(result).toContain("class: error_page");
 	});
 
-	it("renders page route with server flag as <<PageLoad>>", () => {
+	it("renders page route with server flag as class: PageLoad", () => {
 		const symbols = makeEmptySymbolTable({
 			routes: [
 				{
@@ -103,10 +103,10 @@ describe("route stereotype rendering in class diagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<PageLoad>>");
+		expect(result).toContain("class: PageLoad");
 	});
 
-	it("renders layout route with server flag as <<LayoutLoad>>", () => {
+	it("renders layout route with server flag as class: LayoutLoad", () => {
 		const symbols = makeEmptySymbolTable({
 			routes: [
 				{
@@ -120,7 +120,7 @@ describe("route stereotype rendering in class diagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<LayoutLoad>>");
+		expect(result).toContain("class: LayoutLoad");
 	});
 
 	it("includes route segment path in route box", () => {
@@ -230,7 +230,7 @@ describe("route stereotype rendering in class diagram", () => {
 });
 
 describe("route stereotype rendering in package diagram", () => {
-	it("renders page route inside package with <<page>> stereotype", () => {
+	it("renders page route inside package with class: page stereotype", () => {
 		const symbols = makeEmptySymbolTable({
 			routes: [
 				{
@@ -244,7 +244,7 @@ describe("route stereotype rendering in package diagram", () => {
 			],
 		});
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<page>>");
+		expect(result).toContain("class: page");
 		expect(result).toContain("+page");
 	});
 
@@ -266,11 +266,11 @@ describe("route stereotype rendering in package diagram", () => {
 			],
 		});
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain('package "routes"');
-		expect(result).toContain("<<page>>");
+		expect(result).toContain('label: "routes"');
+		expect(result).toContain("class: page");
 	});
 
-	it("renders server route with <<endpoint>> in package", () => {
+	it("renders server route with class: endpoint in package", () => {
 		const symbols = makeEmptySymbolTable({
 			routes: [
 				{
@@ -284,10 +284,10 @@ describe("route stereotype rendering in package diagram", () => {
 			],
 		});
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<endpoint>>");
+		expect(result).toContain("class: endpoint");
 	});
 
-	it("renders layout route with <<layout>> in package", () => {
+	it("renders layout route with class: layout in package", () => {
 		const symbols = makeEmptySymbolTable({
 			routes: [
 				{
@@ -301,10 +301,10 @@ describe("route stereotype rendering in package diagram", () => {
 			],
 		});
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<layout>>");
+		expect(result).toContain("class: layout");
 	});
 
-	it("renders error route with <<error-page>> in package", () => {
+	it("renders error route with class: error_page in package", () => {
 		const symbols = makeEmptySymbolTable({
 			routes: [
 				{
@@ -318,7 +318,7 @@ describe("route stereotype rendering in package diagram", () => {
 			],
 		});
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<error-page>>");
+		expect(result).toContain("class: error_page");
 	});
 
 	it("renders PageLoad and LayoutLoad stereotypes", () => {
@@ -343,7 +343,7 @@ describe("route stereotype rendering in package diagram", () => {
 			],
 		});
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<PageLoad>>");
-		expect(result).toContain("<<LayoutLoad>>");
+		expect(result).toContain("class: PageLoad");
+		expect(result).toContain("class: LayoutLoad");
 	});
 });

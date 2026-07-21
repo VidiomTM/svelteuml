@@ -40,7 +40,7 @@ export interface TsConfigResult {
 export interface SvelteUMLConfig {
 	/** Absolute path to the target SvelteKit project root. */
 	targetDir: string;
-	/** Absolute path for the generated PlantUML output file. */
+	/** Absolute path for the generated D2 output file. */
 	outputPath: string;
 	/** Custom alias overrides (merged over discovered aliases). */
 	aliasOverrides: AliasMap;
@@ -57,4 +57,4 @@ export interface SvelteUMLConfig {
 }
 
 /** Supported output formats for diagram generation. */
-export type OutputFormat = "text" | "svg" | "png";
+export type OutputFormat = "d2" | "svg" | "png";

@@ -19,7 +19,7 @@ export {
 	loadSvelteConfig,
 	loadTsConfig,
 } from "./discovery/index.js";
-export { emitPlantUML, renderClassDiagram, renderPackageDiagram } from "./emission/index.js";
+export { emitD2, renderClassDiagram, renderPackageDiagram } from "./emission/index.js";
 export {
 	classifyRouteFile,
 	componentNameFromPath,

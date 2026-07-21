@@ -19,17 +19,17 @@ function makeEmptySymbolTable(overrides: Partial<SymbolTable> = {}): SymbolTable
 }
 
 describe("renderClassDiagram", () => {
-	it("renders empty diagram with start/end tags", () => {
+	it("renders empty diagram with title comment and no plantuml markers", () => {
 		const result = renderClassDiagram(
 			makeEmptySymbolTable(),
 			createEdgeSet([]),
 			DEFAULT_DIAGRAM_OPTIONS,
 		);
-		expect(result).toContain("@startuml");
-		expect(result).toContain("@enduml");
+		expect(result).toContain("# Diagram");
+		expect(result).not.toContain("@startuml");
 	});
 
-	it("renders a class with members", () => {
+	it("renders a class with members as a shape class block", () => {
 		const symbols = makeEmptySymbolTable({
 			classes: [
 				{
@@ -66,9 +66,10 @@ describe("renderClassDiagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
+		expect(result).toContain("shape: class");
 		expect(result).toContain("AudioPlayer");
-		expect(result).toContain("- volume: number");
-		expect(result).toContain("+ play(url: string): void");
+		expect(result).toContain(`"- volume": "number"`);
+		expect(result).toContain(`"+ play(url: string)": "void"`);
 	});
 
 	it("renders an interface with stereotype", () => {
@@ -108,7 +109,7 @@ describe("renderClassDiagram", () => {
 		expect(result).toContain("abstract");
 	});
 
-	it("renders extends edge", () => {
+	it("renders extends edge (orientation flipped)", () => {
 		const symbols = makeEmptySymbolTable({
 			classes: [
 				{
@@ -133,14 +134,13 @@ describe("renderClassDiagram", () => {
 				},
 			],
 		});
-		const edges = createEdgeSet([
-			{ source: "/b.ts", target: "/a.ts", type: "extends", label: "Base" },
-		]);
+		const edges = createEdgeSet([{ source: "/b.ts", target: "/a.ts", type: "extends" }]);
 		const result = renderClassDiagram(symbols, edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("Base <|-- Child");
+		expect(result).toContain("Base -> Child");
+		expect(result).toContain("style.stroke-dash: 0");
 	});
 
-	it("renders implements edge", () => {
+	it("renders implements edge as dashed", () => {
 		const symbols = makeEmptySymbolTable({
 			classes: [
 				{
@@ -164,20 +164,20 @@ describe("renderClassDiagram", () => {
 				},
 			],
 		});
-		const edges = createEdgeSet([
-			{ source: "/b.ts", target: "/a.ts", type: "implements", label: "IRepo" },
-		]);
+		const edges = createEdgeSet([{ source: "/b.ts", target: "/a.ts", type: "implements" }]);
 		const result = renderClassDiagram(symbols, edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("Repo ..|> IRepo");
+		expect(result).toContain("Repo -> IRepo");
+		expect(result).toContain("style.stroke-dash: 3");
 	});
 
-	it("renders dependency edge", () => {
+	it("renders dependency edge as dashed", () => {
 		const edges = createEdgeSet([{ source: "/a.ts", target: "/b.ts", type: "dependency" }]);
 		const result = renderClassDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("..>");
+		expect(result).toContain("->");
+		expect(result).toContain("style.stroke-dash: 3");
 	});
 
-	it("renders composition edge for stores", () => {
+	it("renders store with stereotype", () => {
 		const symbols = makeEmptySymbolTable({
 			stores: [
 				{
@@ -190,7 +190,7 @@ describe("renderClassDiagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<store>>");
+		expect(result).toContain("class: store");
 		expect(result).toContain("userStore");
 	});
 
@@ -210,9 +210,9 @@ describe("renderClassDiagram", () => {
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showProps: true };
 		const result = renderClassDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).toContain("<<component>>");
+		expect(result).toContain("class: [component]");
 		expect(result).toContain("Button");
-		expect(result).toContain("label: string");
+		expect(result).toContain(`"+ label": "string"`);
 	});
 
 	it("renders component without props when showProps is true", () => {
@@ -221,7 +221,7 @@ describe("renderClassDiagram", () => {
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showProps: true };
 		const result = renderClassDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).toContain("<<component>>");
+		expect(result).toContain("class: [component]");
 		expect(result).toContain("Layout");
 	});
 
@@ -252,7 +252,7 @@ describe("renderClassDiagram", () => {
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showMembers: false };
 		const result = renderClassDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).not.toContain("x: number");
+		expect(result).not.toContain(`: "number"`);
 	});
 
 	it("hides methods when showMethods is false", () => {
@@ -287,46 +287,49 @@ describe("renderClassDiagram", () => {
 		expect(result).not.toContain("doWork");
 	});
 
-	it("includes title when provided", () => {
+	it("includes title comment when provided", () => {
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, title: "My App" };
 		const result = renderClassDiagram(makeEmptySymbolTable(), createEdgeSet([]), opts);
-		expect(result).toContain("@startuml My App");
+		expect(result).toContain("# My App");
 	});
 
-	it("renders prop_flow edge with arrow and label", () => {
+	it("renders prop_flow edge with label", () => {
 		const edges = createEdgeSet([
 			{ source: "/a.ts", target: "/b.ts", type: "prop_flow", label: "foo: string !" },
 		]);
 		const result = renderClassDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("-->");
+		expect(result).toContain("->");
 		expect(result).toContain("foo: string !");
+		expect(result).toContain("style.stroke-dash: 0");
 	});
 
-	it("renders event edge with arrow and label", () => {
+	it("renders event edge with label as dashed", () => {
 		const edges = createEdgeSet([
 			{ source: "/a.ts", target: "/b.ts", type: "event", label: "submit" },
 		]);
 		const result = renderClassDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("..>");
+		expect(result).toContain("->");
 		expect(result).toContain("submit");
+		expect(result).toContain("style.stroke-dash: 3");
 	});
 
 	it("renders aggregation edge", () => {
 		const edges = createEdgeSet([{ source: "/a.ts", target: "/b.ts", type: "aggregation" }]);
 		const result = renderClassDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("o--");
+		expect(result).toContain("aggregation");
 	});
 
 	it("renders association edge", () => {
 		const edges = createEdgeSet([{ source: "/a.ts", target: "/b.ts", type: "association" }]);
 		const result = renderClassDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("-->");
+		expect(result).toContain("->");
+		expect(result).toContain("style.stroke-dash: 0");
 	});
 
 	it("renders composition edge", () => {
 		const edges = createEdgeSet([{ source: "/a.ts", target: "/b.ts", type: "composition" }]);
 		const result = renderClassDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("*--");
+		expect(result).toContain("composition");
 	});
 
 	it("renders class with protected member", () => {
@@ -355,7 +358,7 @@ describe("renderClassDiagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("# data: string");
+		expect(result).toContain(`"# data": "string"`);
 	});
 
 	it("hides visibility when showVisibility is false", () => {
@@ -385,7 +388,7 @@ describe("renderClassDiagram", () => {
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showVisibility: false };
 		const result = renderClassDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).not.toContain("- ");
+		expect(result).toContain(`"x": "number"`);
 	});
 
 	it("renders component with optional prop", () => {
@@ -405,7 +408,7 @@ describe("renderClassDiagram", () => {
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showProps: true };
 		const result = renderClassDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).toContain("size?: number");
+		expect(result).toContain(`"+ size?": "number"`);
 	});
 
 	it("renders function stereotype", () => {
@@ -424,7 +427,7 @@ describe("renderClassDiagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<function>>");
+		expect(result).toContain("function");
 		expect(result).toContain("helper");
 	});
 
@@ -442,7 +445,7 @@ describe("renderClassDiagram", () => {
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showStores: false };
 		const result = renderClassDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).not.toContain("<<store>>");
+		expect(result).not.toContain("class: store");
 	});
 
 	it("hides props when showProps is false", () => {
@@ -457,19 +460,21 @@ describe("renderClassDiagram", () => {
 					isRequired: true,
 				},
 			],
+			components: [{ kind: "component", name: "Button", filePath: "/src/lib/Button.svelte" }],
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showProps: false };
 		const result = renderClassDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).not.toContain("<<component>>");
+		expect(result).not.toContain("class: [component]");
 	});
 
-	it("renders state_dependency edge", () => {
+	it("renders state_dependency edge as dashed", () => {
 		const edges = createEdgeSet([{ source: "/a.ts", target: "/b.ts", type: "state_dependency" }]);
 		const result = renderClassDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("..>");
+		expect(result).toContain("->");
+		expect(result).toContain("style.stroke-dash: 3");
 	});
 
-	it("renders slot edge", () => {
+	it("renders slot edge with label", () => {
 		const edges = createEdgeSet([
 			{
 				source: "/src/routes/+page.svelte",
@@ -479,7 +484,7 @@ describe("renderClassDiagram", () => {
 			},
 		]);
 		const result = renderClassDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("..>");
+		expect(result).toContain("->");
 		expect(result).toContain("slot:default");
 	});
 
@@ -488,7 +493,8 @@ describe("renderClassDiagram", () => {
 			{ source: "/Parent.svelte", target: "/Child.svelte", type: "component_usage" },
 		]);
 		const result = renderClassDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("-->");
+		expect(result).toContain("->");
+		expect(result).toContain("style.stroke-dash: 0");
 	});
 
 	it("renders exported class stereotype", () => {
@@ -508,7 +514,7 @@ describe("renderClassDiagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<Exported>>");
+		expect(result).toContain("Exported");
 	});
 
 	it("renders exported store stereotype", () => {
@@ -525,7 +531,7 @@ describe("renderClassDiagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<Exported>>");
+		expect(result).toContain("Exported");
 	});
 
 	it("renders store with state runeKind", () => {
@@ -542,7 +548,7 @@ describe("renderClassDiagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<state>>");
+		expect(result).toContain("class: state");
 	});
 
 	it("renders store with derived runeKind", () => {
@@ -559,7 +565,7 @@ describe("renderClassDiagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<derived>>");
+		expect(result).toContain("class: derived");
 	});
 
 	it("renders edge with label", () => {
@@ -567,7 +573,7 @@ describe("renderClassDiagram", () => {
 			{ source: "/a.ts", target: "/b.ts", type: "dependency", label: "import" },
 		]);
 		const result = renderClassDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain(": import");
+		expect(result).toContain(`: "import"`);
 	});
 
 	it("renders component props when showMembers is true", () => {
@@ -586,7 +592,7 @@ describe("renderClassDiagram", () => {
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showProps: true, showMembers: true };
 		const result = renderClassDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).toContain("title: string");
+		expect(result).toContain("title");
 	});
 
 	it("hides component props when showMembers is false", () => {
@@ -605,7 +611,7 @@ describe("renderClassDiagram", () => {
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showProps: true, showMembers: false };
 		const result = renderClassDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).not.toContain("title: string");
+		expect(result).not.toContain(`"+ title"`);
 	});
 
 	it("renders non-exported function without stereotype", () => {
@@ -625,10 +631,10 @@ describe("renderClassDiagram", () => {
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
 		expect(result).toContain("internal");
-		expect(result).not.toContain("<<Exported>>");
+		expect(result).not.toContain("Exported");
 	});
 
-	it("renders grouped symbols inside package blocks", () => {
+	it("renders grouped symbols inside container blocks", () => {
 		const symbols = makeEmptySymbolTable({
 			classes: [
 				{
@@ -656,7 +662,7 @@ describe("renderClassDiagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain('package "core" <<group>>');
+		expect(result).toContain(`label: "core"`);
 		expect(result).toContain("ServiceA");
 		expect(result).toContain("ServiceB");
 	});
@@ -688,7 +694,7 @@ describe("renderClassDiagram", () => {
 			],
 		});
 		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain('package "utils" <<group>>');
+		expect(result).toContain(`label: "utils"`);
 		expect(result).toContain("UngroupedClass");
 	});
 });

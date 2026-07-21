@@ -7,7 +7,7 @@ import { runPipeline } from "../../src/cli/runner.js";
 
 const FIXTURE_DIR = resolve(import.meta.dirname, "../fixtures/minimal-sveltekit");
 const testOutputDir = join(tmpdir(), "svelteuml-e2e-tests");
-const OUTPUT_PATH = join(testOutputDir, "test-output.puml");
+const OUTPUT_PATH = join(testOutputDir, "test-output.d2");
 
 function makeCliOptions(overrides: Partial<CliOptions> = {}): CliOptions {
 	mkdirSync(testOutputDir, { recursive: true });
@@ -15,7 +15,7 @@ function makeCliOptions(overrides: Partial<CliOptions> = {}): CliOptions {
 		subcommand: "generate",
 		targetDir: FIXTURE_DIR,
 		outputPath: OUTPUT_PATH,
-		format: "text",
+		format: "d2",
 		excludeExternals: false,
 		maxDepth: 0,
 		exclude: [],
@@ -44,23 +44,23 @@ describe("E2E: full pipeline", () => {
 		expect(result.error).toBeUndefined();
 	});
 
-	it("generates a .puml file", async () => {
+	it("generates a .d2 file", async () => {
 		await runPipeline(makeCliOptions(), {});
 		expect(existsSync(OUTPUT_PATH)).toBe(true);
 	});
 
-	it("produces syntactically valid PlantUML", async () => {
+	it("produces syntactically valid D2", async () => {
 		await runPipeline(makeCliOptions(), {});
 		const content = readFileSync(OUTPUT_PATH, "utf-8");
-		expect(content).toContain("@startuml");
-		expect(content).toContain("@enduml");
+		expect(content).toContain("# ");
+		expect(content).toContain("direction:");
 	});
 
 	it("includes source files as vertices", async () => {
 		await runPipeline(makeCliOptions(), {});
 		const content = readFileSync(OUTPUT_PATH, "utf-8");
 		expect(content).toContain("userStore");
-		expect(content).toContain("<<store>>");
+		expect(content).toMatch(/class: \[?store/);
 		expect(content).toContain("+page");
 		expect(content).toContain("+server");
 	});
@@ -100,15 +100,24 @@ describe("E2E: full pipeline", () => {
 	});
 
 	it("max-depth limits diagram scope", async () => {
-		const result = await runPipeline(makeCliOptions({ maxDepth: 1, outputPath: join(testOutputDir, "max-depth.puml") }), {});
+		const result = await runPipeline(
+			makeCliOptions({ maxDepth: 1, outputPath: join(testOutputDir, "max-depth.d2") }),
+			{},
+		);
 		expect(result.success).toBe(true);
-		expect(existsSync(join(testOutputDir, "max-depth.puml"))).toBe(true);
+		expect(existsSync(join(testOutputDir, "max-depth.d2"))).toBe(true);
 	});
 
 	it("exclude-patterns filters output diagram", async () => {
-		const result = await runPipeline(makeCliOptions({ excludePatterns: ["**/test/**"], outputPath: join(testOutputDir, "exclude-patterns.puml") }), {});
+		const result = await runPipeline(
+			makeCliOptions({
+				excludePatterns: ["**/test/**"],
+				outputPath: join(testOutputDir, "exclude-patterns.d2"),
+			}),
+			{},
+		);
 		expect(result.success).toBe(true);
-		const content = readFileSync(join(testOutputDir, "exclude-patterns.puml"), "utf-8");
-		expect(content).toContain("@startuml");
+		const content = readFileSync(join(testOutputDir, "exclude-patterns.d2"), "utf-8");
+		expect(content).toContain("# ");
 	});
 });

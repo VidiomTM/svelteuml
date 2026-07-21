@@ -18,15 +18,28 @@ function makeEmptySymbolTable(overrides: Partial<SymbolTable> = {}): SymbolTable
 	};
 }
 
+function fn(name: string, filePath: string, isExported = true) {
+	return {
+		kind: "function" as const,
+		name,
+		filePath,
+		isExported,
+		isAsync: false,
+		parameters: [],
+		returnType: "void",
+		typeParams: [],
+	};
+}
+
 describe("renderPackageDiagram", () => {
-	it("renders empty diagram with start/end tags", () => {
+	it("renders empty diagram with title comment and no plantuml markers", () => {
 		const result = renderPackageDiagram(
 			makeEmptySymbolTable(),
 			createEdgeSet([]),
 			DEFAULT_DIAGRAM_OPTIONS,
 		);
-		expect(result).toContain("@startuml");
-		expect(result).toContain("@enduml");
+		expect(result).toContain("# Package Diagram");
+		expect(result).not.toContain("@startuml");
 	});
 
 	it("groups classes into packages by directory", () => {
@@ -59,19 +72,20 @@ describe("renderPackageDiagram", () => {
 		expect(result).toContain("VideoPlayer");
 	});
 
-	it("renders dependency between packages with weight", () => {
+	it("renders dependency between packages with weighted dashed edge", () => {
 		const edges = createEdgeSet([
 			{ source: "/src/routes/+page.ts", target: "/src/lib/utils.ts", type: "dependency" },
 		]);
 		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("..>");
-		expect(result).toContain(": 1");
+		expect(result).toContain("->");
+		expect(result).toContain(`: "1"`);
+		expect(result).toContain("style.stroke-dash: 3");
 	});
 
-	it("includes title when provided", () => {
+	it("includes title comment when provided", () => {
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, title: "Packages" };
 		const result = renderPackageDiagram(makeEmptySymbolTable(), createEdgeSet([]), opts);
-		expect(result).toContain("@startuml Packages");
+		expect(result).toContain("# Packages");
 	});
 
 	it("renders stores in packages when showStores is true", () => {
@@ -88,7 +102,7 @@ describe("renderPackageDiagram", () => {
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showStores: true };
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).toContain("<<store>>");
+		expect(result).toContain("class: store");
 		expect(result).toContain("count");
 	});
 
@@ -106,7 +120,7 @@ describe("renderPackageDiagram", () => {
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showStores: false };
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).not.toContain("<<store>>");
+		expect(result).not.toContain("class: store");
 	});
 
 	it("renders components in packages when showProps is true", () => {
@@ -124,43 +138,26 @@ describe("renderPackageDiagram", () => {
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showProps: true };
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).toContain("<<component>>");
+		expect(result).toContain("class: component");
 		expect(result).toContain("Button");
 	});
 
 	it("renders component without props via symbols.components", () => {
 		const symbols = makeEmptySymbolTable({
-			components: [
-				{
-					kind: "component",
-					name: "Button",
-					filePath: "/src/lib/Button.svelte",
-				},
-			],
+			components: [{ kind: "component", name: "Button", filePath: "/src/lib/Button.svelte" }],
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showProps: true };
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).toContain("<<component>>");
+		expect(result).toContain("class: component");
 		expect(result).toContain("Button");
 	});
 
 	it("renders functions in packages", () => {
 		const symbols = makeEmptySymbolTable({
-			functions: [
-				{
-					kind: "function",
-					name: "helper",
-					filePath: "/src/lib/utils.ts",
-					isExported: true,
-					isAsync: false,
-					parameters: [],
-					returnType: "void",
-					typeParams: [],
-				},
-			],
+			functions: [fn("helper", "/src/lib/utils.ts")],
 		});
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<function>>");
+		expect(result).toContain("class: [function");
 		expect(result).toContain("helper");
 	});
 
@@ -169,7 +166,7 @@ describe("renderPackageDiagram", () => {
 			{ source: "/src/lib/a.ts", target: "/src/lib/b.ts", type: "dependency" },
 		]);
 		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).not.toContain("..>");
+		expect(result).not.toContain("->");
 	});
 
 	it("renders extends arrow between packages with weight", () => {
@@ -177,8 +174,8 @@ describe("renderPackageDiagram", () => {
 			{ source: "/src/lib/a.ts", target: "/src/core/b.ts", type: "extends" },
 		]);
 		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("..>");
-		expect(result).toContain(": 1");
+		expect(result).toContain("->");
+		expect(result).toContain(`: "1"`);
 	});
 
 	it("renders composition arrow between packages with weight", () => {
@@ -186,8 +183,8 @@ describe("renderPackageDiagram", () => {
 			{ source: "/src/routes/+page.ts", target: "/src/lib/store.ts", type: "composition" },
 		]);
 		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("..>");
-		expect(result).toContain(": 1");
+		expect(result).toContain("->");
+		expect(result).toContain(`: "1"`);
 	});
 
 	it("deduplicates edges between same package pair with weight count", () => {
@@ -196,9 +193,9 @@ describe("renderPackageDiagram", () => {
 			{ source: "/src/routes/c.ts", target: "/src/lib/d.ts", type: "dependency" },
 		]);
 		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		const matchCount = (result.match(/\.\.>/g) ?? []).length;
+		const matchCount = (result.match(/->/g) ?? []).length;
 		expect(matchCount).toBe(1);
-		expect(result).toContain(": 2");
+		expect(result).toContain(`: "2"`);
 	});
 
 	it("aggregates mixed edge types between same packages with total weight", () => {
@@ -208,9 +205,9 @@ describe("renderPackageDiagram", () => {
 			{ source: "/src/routes/e.ts", target: "/src/lib/f.ts", type: "association" },
 		]);
 		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		const arrowCount = (result.match(/\.\.>/g) ?? []).length;
+		const arrowCount = (result.match(/->/g) ?? []).length;
 		expect(arrowCount).toBe(1);
-		expect(result).toContain(": 3");
+		expect(result).toContain(`: "3"`);
 	});
 
 	it("renders separate arrows for different package pairs with correct weights", () => {
@@ -220,16 +217,16 @@ describe("renderPackageDiagram", () => {
 			{ source: "/src/routes/e.ts", target: "/src/core/f.ts", type: "dependency" },
 		]);
 		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		const arrowCount = (result.match(/\.\.>/g) ?? []).length;
+		const arrowCount = (result.match(/->/g) ?? []).length;
 		expect(arrowCount).toBe(2);
-		expect(result).toContain(": 2");
-		expect(result).toContain(": 1");
+		expect(result).toContain(`: "2"`);
+		expect(result).toContain(`: "1"`);
 	});
 
 	it("skips edges where source or target has no package", () => {
 		const edges = createEdgeSet([{ source: "a.ts", target: "/src/lib/b.ts", type: "dependency" }]);
 		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).not.toContain("..>");
+		expect(result).not.toContain("->");
 	});
 
 	it("renders state_dependency arrow between packages with weight", () => {
@@ -237,16 +234,20 @@ describe("renderPackageDiagram", () => {
 			{ source: "/src/routes/+page.ts", target: "/src/lib/store.ts", type: "state_dependency" },
 		]);
 		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("..>");
-		expect(result).toContain(": 1");
+		expect(result).toContain("->");
+		expect(result).toContain(`: "1"`);
 	});
 
 	it("renders component_usage arrow between packages", () => {
 		const edges = createEdgeSet([
-			{ source: "/src/features/Parent.svelte", target: "/src/lib/Child.svelte", type: "component_usage" },
+			{
+				source: "/src/features/Parent.svelte",
+				target: "/src/lib/Child.svelte",
+				type: "component_usage",
+			},
 		]);
 		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("..>");
+		expect(result).toContain("->");
 	});
 
 	it("renders aggregation arrow between packages with weight", () => {
@@ -254,8 +255,8 @@ describe("renderPackageDiagram", () => {
 			{ source: "/src/routes/+page.ts", target: "/src/lib/utils.ts", type: "aggregation" },
 		]);
 		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("..>");
-		expect(result).toContain(": 1");
+		expect(result).toContain("->");
+		expect(result).toContain(`: "1"`);
 	});
 
 	it("renders association arrow between packages with weight", () => {
@@ -263,18 +264,17 @@ describe("renderPackageDiagram", () => {
 			{ source: "/src/routes/+page.ts", target: "/src/lib/utils.ts", type: "association" },
 		]);
 		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("..>");
-		expect(result).toContain(": 1");
+		expect(result).toContain("->");
+		expect(result).toContain(`: "1"`);
 	});
 
-	it("removes empty packages when hideEmptyPackages is true", () => {
+	it("omits package containers but keeps edges when no members exist", () => {
 		const edges = createEdgeSet([
 			{ source: "/src/routes/a.ts", target: "/src/core/b.ts", type: "dependency" },
 		]);
-		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, hideEmptyPackages: true };
-		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, opts);
-		expect(result).not.toContain("package");
-		expect(result).toContain("..>");
+		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
+		expect(result).not.toContain("label:");
+		expect(result).toContain("->");
 	});
 
 	it("renders exported class stereotype in packages", () => {
@@ -294,7 +294,7 @@ describe("renderPackageDiagram", () => {
 			],
 		});
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<Exported>>");
+		expect(result).toContain("Exported");
 	});
 
 	it("renders exported store stereotype in packages", () => {
@@ -312,26 +312,15 @@ describe("renderPackageDiagram", () => {
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showStores: true };
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).toContain("<<Exported>>");
+		expect(result).toContain("Exported");
 	});
 
 	it("renders exported function stereotype in packages", () => {
 		const symbols = makeEmptySymbolTable({
-			functions: [
-				{
-					kind: "function",
-					name: "helper",
-					filePath: "/src/lib/utils.ts",
-					isExported: true,
-					isAsync: false,
-					parameters: [],
-					returnType: "void",
-					typeParams: [],
-				},
-			],
+			functions: [fn("helper", "/src/lib/utils.ts")],
 		});
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("<<Exported>>");
+		expect(result).toContain("Exported");
 	});
 
 	it("renders state runeKind store stereotype in packages", () => {
@@ -349,7 +338,7 @@ describe("renderPackageDiagram", () => {
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showStores: true };
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).toContain("<<state>>");
+		expect(result).toContain("class: state");
 	});
 
 	it("renders derived runeKind store stereotype in packages", () => {
@@ -367,7 +356,7 @@ describe("renderPackageDiagram", () => {
 		});
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, showStores: true };
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), opts);
-		expect(result).toContain("<<derived>>");
+		expect(result).toContain("class: derived");
 	});
 
 	it("renders interface in packages", () => {
@@ -385,7 +374,8 @@ describe("renderPackageDiagram", () => {
 			],
 		});
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("interface IRepo");
+		expect(result).toContain("IRepo");
+		expect(result).toContain("class: interface");
 	});
 
 	it("renders implements arrow between packages with weight", () => {
@@ -393,26 +383,8 @@ describe("renderPackageDiagram", () => {
 			{ source: "/src/lib/repo.ts", target: "/src/core/types.ts", type: "implements" },
 		]);
 		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("..>");
-		expect(result).toContain(": 1");
-	});
-
-	it("renders aggregation arrow between packages with weight", () => {
-		const edges = createEdgeSet([
-			{ source: "/src/routes/a.ts", target: "/src/lib/b.ts", type: "aggregation" },
-		]);
-		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("..>");
-		expect(result).toContain(": 1");
-	});
-
-	it("renders association arrow between packages with weight", () => {
-		const edges = createEdgeSet([
-			{ source: "/src/routes/a.ts", target: "/src/lib/b.ts", type: "association" },
-		]);
-		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("..>");
-		expect(result).toContain(": 1");
+		expect(result).toContain("->");
+		expect(result).toContain(`: "1"`);
 	});
 
 	it("groups nested files under top-level src/ dir", () => {
@@ -441,7 +413,7 @@ describe("renderPackageDiagram", () => {
 			],
 		});
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain('package "lib"');
+		expect(result).toContain(`label: "lib"`);
 		expect(result).toContain("AudioPlayer");
 		expect(result).toContain("VideoPlayer");
 	});
@@ -472,8 +444,8 @@ describe("renderPackageDiagram", () => {
 			],
 		});
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain('package "lib"');
-		expect(result).toContain('package "routes"');
+		expect(result).toContain(`label: "lib"`);
+		expect(result).toContain(`label: "routes"`);
 	});
 
 	it("skips files directly in src/ with no subdirectory", () => {
@@ -493,8 +465,7 @@ describe("renderPackageDiagram", () => {
 		});
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
 		expect(result).not.toContain("TopLevel");
-		expect(result).toContain("@startuml");
-		expect(result).toContain("@enduml");
+		expect(result).toContain("# Package Diagram");
 	});
 
 	it("falls back to immediate parent dir for files outside src/", () => {
@@ -513,7 +484,7 @@ describe("renderPackageDiagram", () => {
 			],
 		});
 		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain('package "external"');
+		expect(result).toContain(`label: "external"`);
 		expect(result).toContain("ExternalUtil");
 	});
 
@@ -522,6 +493,26 @@ describe("renderPackageDiagram", () => {
 			{ source: "/src/lib/sub/a.ts", target: "/src/routes/deep/api.ts", type: "dependency" },
 		]);
 		const result = renderPackageDiagram(makeEmptySymbolTable(), edges, DEFAULT_DIAGRAM_OPTIONS);
-		expect(result).toContain("..>");
+		expect(result).toContain("->");
+	});
+
+	it("keeps dotted member names quoted without namespace collision", () => {
+		const symbols = makeEmptySymbolTable({
+			functions: [fn("+layout", "/src/routes/x.ts"), fn("+layout.server", "/src/routes/x.ts")],
+		});
+		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
+		expect(result).toContain(`"+layout":`);
+		expect(result).toContain(`"+layout.server":`);
+	});
+
+	it("namespaces same-named members in different packages", () => {
+		const symbols = makeEmptySymbolTable({
+			functions: [fn("index", "/src/lib/a.ts"), fn("index", "/src/routes/b.ts")],
+		});
+		const result = renderPackageDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
+		const occurrences = (result.match(/"index":/g) ?? []).length;
+		expect(occurrences).toBe(2);
+		expect(result).toContain(`label: "lib"`);
+		expect(result).toContain(`label: "routes"`);
 	});
 });

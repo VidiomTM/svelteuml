@@ -14,14 +14,14 @@ describe("parseArgs", () => {
 		expect(result.targetDir).toBe("./src");
 	});
 
-	it("defaults format to text for generate", () => {
+	it("defaults format to d2 for generate", () => {
 		const result = parseArgs(["generate", "./src"]);
-		expect(result.format).toBe("text");
+		expect(result.format).toBe("d2");
 	});
 
-	it("defaults format to text for watch", () => {
+	it("defaults format to d2 for watch", () => {
 		const result = parseArgs(["watch", "./src"]);
-		expect(result.format).toBe("text");
+		expect(result.format).toBe("d2");
 	});
 
 	it("parses --format svg on generate", () => {

@@ -13,8 +13,8 @@ function makeCliOptions(fixtureName: string, overrides: Partial<CliOptions> = {}
 	return {
 		subcommand: "generate",
 		targetDir: fixtureDir,
-		outputPath: join(testOutputDir, `${fixtureName}-output.puml`),
-		format: "text",
+		outputPath: join(testOutputDir, `${fixtureName}-output.d2`),
+		format: "d2",
 		excludeExternals: false,
 		maxDepth: 0,
 		exclude: [],
@@ -46,16 +46,16 @@ afterEach(() => {
 });
 
 describe("Integration: minimal-sveltekit fixture", () => {
-	it("produces valid PlantUML output", async () => {
+	it("produces valid D2 output", async () => {
 		const output = await getOutput("minimal-sveltekit");
-		expect(output).toContain("@startuml");
-		expect(output).toContain("@enduml");
+		expect(output).toContain("# ");
+		expect(output).toContain("direction:");
 	});
 
 	it("contains store definitions", async () => {
 		const output = await getOutput("minimal-sveltekit");
 		expect(output).toContain("userStore");
-		expect(output).toContain("<<store>>");
+		expect(output).toMatch(/class: \[?store/);
 	});
 
 	it("contains route entries", async () => {
@@ -77,10 +77,10 @@ describe("Integration: minimal-sveltekit fixture", () => {
 });
 
 describe("Integration: group-layouts fixture", () => {
-	it("produces valid PlantUML output", async () => {
+	it("produces valid D2 output", async () => {
 		const output = await getOutput("group-layouts");
-		expect(output).toContain("@startuml");
-		expect(output).toContain("@enduml");
+		expect(output).toContain("# ");
+		expect(output).toContain("direction:");
 	});
 
 	it("contains auth group routes", async () => {
@@ -96,20 +96,20 @@ describe("Integration: group-layouts fixture", () => {
 });
 
 describe("Integration: svelte-stores fixture", () => {
-	it("produces valid PlantUML output", async () => {
+	it("produces valid D2 output", async () => {
 		const output = await getOutput("svelte-stores");
-		expect(output).toContain("@startuml");
-		expect(output).toContain("@enduml");
+		expect(output).toContain("# ");
+		expect(output).toContain("direction:");
 	});
 
 	it("contains store definitions", async () => {
 		const output = await getOutput("svelte-stores");
-		expect(output).toContain("<<store>>");
+		expect(output).toMatch(/class: \[?store/);
 	});
 
 	it("contains function exports", async () => {
 		const output = await getOutput("svelte-stores");
-		expect(output).toContain("<<function>>");
+		expect(output).toMatch(/class: \[?function/);
 	});
 
 	it("matches snapshot", async () => {
@@ -119,10 +119,10 @@ describe("Integration: svelte-stores fixture", () => {
 });
 
 describe("Integration: sveltekit-synthetic fixture", () => {
-	it("produces valid PlantUML output", async () => {
+	it("produces valid D2 output", async () => {
 		const output = await getOutput("sveltekit-synthetic");
-		expect(output).toContain("@startuml");
-		expect(output).toContain("@enduml");
+		expect(output).toContain("# ");
+		expect(output).toContain("direction:");
 	});
 
 	it("contains route pattern entries", async () => {
@@ -154,7 +154,7 @@ describe("Integration: sveltekit-synthetic fixture", () => {
 
 	it("contains store definitions", async () => {
 		const output = await getOutput("sveltekit-synthetic");
-		expect(output).toContain("<<store>>");
+		expect(output).toMatch(/class: \[?store/);
 	});
 
 	it("contains server exports", async () => {
@@ -170,10 +170,10 @@ describe("Integration: sveltekit-synthetic fixture", () => {
 });
 
 describe("Integration: synthetic fixture", () => {
-	it("produces valid PlantUML output", async () => {
+	it("produces valid D2 output", async () => {
 		const output = await getOutput("synthetic");
-		expect(output).toContain("@startuml");
-		expect(output).toContain("@enduml");
+		expect(output).toContain("# ");
+		expect(output).toContain("direction:");
 	});
 
 	it("contains component definitions", async () => {
@@ -186,14 +186,14 @@ describe("Integration: synthetic fixture", () => {
 		const output = await getOutput("synthetic");
 		expect(output).toContain("count");
 		expect(output).toContain("doubleCount");
-		expect(output).toContain("<<store>>");
+		expect(output).toMatch(/class: \[?store/);
 	});
 
 	it("contains utility functions", async () => {
 		const output = await getOutput("synthetic");
 		expect(output).toContain("greet");
 		expect(output).toContain("formatPrice");
-		expect(output).toContain("<<function>>");
+		expect(output).toMatch(/class: \[?function/);
 	});
 
 	it("contains server endpoint exports", async () => {
@@ -211,10 +211,10 @@ describe("Integration: synthetic fixture", () => {
 
 	it("contains stereotype tags", async () => {
 		const output = await getOutput("synthetic");
-		expect(output).toContain("<<component>>");
-		expect(output).toContain("<<store>>");
-		expect(output).toContain("<<function>>");
-		expect(output).toContain("<<endpoint>>");
+		expect(output).toMatch(/class: \[?component/);
+		expect(output).toMatch(/class: \[?store/);
+		expect(output).toMatch(/class: \[?function/);
+		expect(output).toMatch(/class: \[?endpoint/);
 	});
 
 	it("detects prop definitions", async () => {
@@ -230,14 +230,20 @@ describe("Integration: synthetic fixture", () => {
 });
 
 describe("Integration: cross-fixture validation", () => {
-	it("all fixtures produce valid PlantUML with @startuml/@enduml", {
+	it("all fixtures produce valid D2 with # and direction:", {
 		timeout: 30_000,
 	}, async () => {
-		const fixtures = ["minimal-sveltekit", "group-layouts", "svelte-stores", "sveltekit-synthetic", "synthetic"];
+		const fixtures = [
+			"minimal-sveltekit",
+			"group-layouts",
+			"svelte-stores",
+			"sveltekit-synthetic",
+			"synthetic",
+		];
 		for (const fixture of fixtures) {
 			const output = await getOutput(fixture);
-			expect(output, `${fixture} should contain @startuml`).toContain("@startuml");
-			expect(output, `${fixture} should contain @enduml`).toContain("@enduml");
+			expect(output, `${fixture} should contain # title`).toContain("# ");
+			expect(output, `${fixture} should contain direction:`).toContain("direction:");
 		}
 	});
 });

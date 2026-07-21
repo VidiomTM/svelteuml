@@ -17,7 +17,7 @@ const SvelteUMLConfigSchema = z.object({
 		.transform((val) => resolve(val)),
 	outputPath: z
 		.string()
-		.default("diagram.puml")
+		.default("diagram.d2")
 		.transform((val) => resolve(val)),
 	aliasOverrides: z.record(z.string(), z.string()).default({}),
 	exclude: z.array(z.string()).default([]),
@@ -52,7 +52,7 @@ export function safeValidateConfig(input: unknown):
 export function getDefaultConfig(targetDir: string): SvelteUMLConfigInput {
 	return {
 		targetDir: resolve(targetDir),
-		outputPath: "diagram.puml",
+		outputPath: "diagram.d2",
 		aliasOverrides: {},
 		exclude: [],
 		include: [],
@@ -68,7 +68,7 @@ export function mergeConfigs(
 ): SvelteUMLConfigInput {
 	return {
 		targetDir: cliArgs.targetDir ?? fileConfig.targetDir ?? process.cwd(),
-		outputPath: cliArgs.outputPath ?? fileConfig.outputPath ?? "diagram.puml",
+		outputPath: cliArgs.outputPath ?? fileConfig.outputPath ?? "diagram.d2",
 		aliasOverrides: {
 			...(fileConfig.aliasOverrides ?? {}),
 			...(cliArgs.aliasOverrides ?? {}),

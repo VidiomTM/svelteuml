@@ -1,79 +1,74 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`PlantUML snapshot: class diagram > emits valid PlantUML with classes and edges 1`] = `
-"@startuml Diagram
-skinparam classAttributeIconSize 0
-
-top to bottom direction
-
-class "App" as App {
+exports[`D2 snapshot: class diagram > emits valid D2 with classes and edges 1`] = `
+"# Diagram
+direction: down
+App: {
+  shape: class
+  label: "App"
 }
-
-class "Router" as Router {
+Router: {
+  shape: class
+  label: "Router"
 }
-
-class "Store" as Store {
+Store: {
+  shape: class
+  label: "Store"
 }
-
-App ..> Router
-App *-- Store
-@enduml"
+App -> Router { style.stroke-dash: 3 }
+App -> Store: "composition" { style.stroke-dash: 0 }"
 `;
 
-exports[`PlantUML snapshot: class diagram > emits valid PlantUML with focus mode 1`] = `
-"@startuml Diagram
-skinparam classAttributeIconSize 0
-
-top to bottom direction
-
-class "App" as App {
+exports[`D2 snapshot: class diagram > emits valid D2 with focus mode 1`] = `
+"# Diagram
+direction: down
+App: {
+  shape: class
+  label: "App"
 }
-
-class "Router" as Router {
+Router: {
+  shape: class
+  label: "Router"
 }
-
-class "Store" as Store {
+Store: {
+  shape: class
+  label: "Store"
 }
-
-App ..> Router
-App *-- Store
-@enduml"
+App -> Router { style.stroke-dash: 3 }
+App -> Store: "composition" { style.stroke-dash: 0 }"
 `;
 
-exports[`PlantUML snapshot: class diagram > emits valid PlantUML with stores and functions 1`] = `
-"@startuml Diagram
-skinparam classAttributeIconSize 0
-
-top to bottom direction
-
-class "Counter" as Counter {
+exports[`D2 snapshot: class diagram > emits valid D2 with stores and functions 1`] = `
+"# Diagram
+direction: down
+Counter: {
+  shape: class
+  label: "Counter"
 }
-
-class "count" <<state>> <<Exported>> {
-  storeType: writable
-  valueType: number
+count: {
+  shape: class
+  label: "count"
+  class: [state; Exported]
+  "storeType": "writable"
+  "valueType": "number"
 }
-
-class "formatCount" <<function>> <<Exported>> {
-}
-
-@enduml"
+formatCount: {
+  shape: class
+  label: "formatCount"
+  class: [function; Exported]
+}"
 `;
 
-exports[`PlantUML snapshot: package diagram > emits valid PlantUML with packages 1`] = `
-"@startuml Package Diagram
-
-top to bottom direction
-
-package "lib" as lib {
-  class Layout
+exports[`D2 snapshot: package diagram > emits valid D2 with packages 1`] = `
+"# Package Diagram
+direction: down
+lib: {
+  label: "lib"
+  "Layout": { class: class }
 }
-
-package "routes" as routes {
-  class App
+routes: {
+  label: "routes"
+  "App": { class: class }
 }
-
-routes ..> lib : 1
-
-@enduml"
+routes -> lib: "1" { style.stroke-dash: 3 }"
 `;

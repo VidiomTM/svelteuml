@@ -14,6 +14,7 @@ import { discoverFiles } from "../discovery/file-discovery.js";
 import { loadSvelteConfig } from "../discovery/svelte-config.js";
 import { loadTsConfig } from "../discovery/tsconfig.js";
 import { assignGroups, parseAliasGroups, validateGroups } from "../emission/alias.js";
+import { emitD2 } from "../emission/d2-emitter.js";
 import {
 	filterByExcludePatterns,
 	filterEdgesByScope,
@@ -21,8 +22,7 @@ import {
 	resolveFocusScope,
 	resolveGlobalScope,
 } from "../emission/focus.js";
-import { emitPlantUML } from "../emission/plantuml-emitter.js";
-import { renderPlantUml } from "../emission/renderer.js";
+import { renderD2 } from "../emission/renderer.js";
 import { SymbolExtractor } from "../extraction/symbol-extractor.js";
 import { convertFiles } from "../parsing/svelte-to-tsx.js";
 import { buildParsingProject } from "../parsing/ts-morph-project.js";
@@ -45,7 +45,7 @@ export interface RunResult {
 }
 
 const FORMAT_DEFAULTS: Record<OutputFormat, string> = {
-	text: "diagram.puml",
+	d2: "diagram.d2",
 	svg: "diagram.svg",
 	png: "diagram.png",
 };
@@ -278,13 +278,13 @@ export async function runPipeline(
 			emissionEdges = filtered.edges;
 		}
 
-		const emission = emitPlantUML(emissionSymbols, emissionEdges, diagramOpts);
+		const emission = emitD2(emissionSymbols, emissionEdges, diagramOpts);
 		r.succeed("Diagram generated");
 
 		const errorSummary = errorHandler.getSummary();
 		if (errorSummary) r.warn(errorSummary);
 
-		if (cliOpts.format === "text" && !cliOpts.outputPath) {
+		if (cliOpts.format === "d2" && !cliOpts.outputPath) {
 			process.stdout.write(emission.content);
 			return {
 				success: true,
@@ -295,9 +295,10 @@ export async function runPipeline(
 
 		if (cliOpts.format === "svg" || cliOpts.format === "png") {
 			r.startPhase("rendering", 0);
-			const renderResult = await renderPlantUml(emission.content, cliOpts.format);
+			const renderResult = await renderD2(emission.content, cliOpts.format);
 			if (renderResult.success && renderResult.data) {
-				writeFileSync(config.outputPath, renderResult.data, "utf-8");
+				const encoding = cliOpts.format === "png" ? "base64" : "utf-8";
+				writeFileSync(config.outputPath, renderResult.data, encoding);
 				r.succeed(`Rendered ${cliOpts.format.toUpperCase()} to ${config.outputPath}`);
 				return {
 					success: true,
@@ -307,8 +308,8 @@ export async function runPipeline(
 				};
 			}
 
-			r.warn(renderResult.error ?? "Render failed, falling back to PlantUML text output");
-			const fallbackPath = config.outputPath.replace(/\.(svg|png)$/, ".puml");
+			r.warn(renderResult.error ?? "Render failed, falling back to D2 source output");
+			const fallbackPath = config.outputPath.replace(/\.(svg|png)$/, ".d2");
 			writeFileSync(fallbackPath, emission.content, "utf-8");
 			return {
 				success: true,
