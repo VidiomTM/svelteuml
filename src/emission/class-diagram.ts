@@ -8,6 +8,8 @@ import type {
 import type { DiagramOptions } from "../types/diagram.js";
 import type { EdgeSet, EdgeType } from "../types/edge.js";
 import { normalizeFilePath } from "../utils/path.js";
+import { sanitizeStereotype } from "./color-theme.js";
+import { renderClassRef } from "./d2-utils.js";
 import { routeStereotype } from "./route-utils.js";
 import { applyFocusFilter, filterHiddenComponents } from "./tag-processor.js";
 
@@ -55,67 +57,82 @@ function pushToGroup<T extends { group?: string }>(
 	}
 }
 
-function renderGroupedSymbols(
-	lines: string[],
-	symbols: SymbolTable,
-	options: DiagramOptions,
-	declared: Set<string>,
-): void {
+interface RenderContext {
+	options: DiagramOptions;
+	declared: Set<string>;
+	/** Maps a node name to its fully-qualified D2 id (container-prefixed). */
+	nodeIds: Map<string, string>;
+	prefix: string;
+}
+
+function renderGroupedSymbols(lines: string[], symbols: SymbolTable, ctx: RenderContext): void {
 	const groups = collectGroups(symbols);
 	if (groups.size === 0) return;
 
 	for (const [groupName, groupSymbols] of groups) {
-		lines.push(`package "${groupName}" <<group>> {`);
-		renderSymbolsBlock(lines, groupSymbols, options, declared);
+		lines.push(`${sanitizeId(groupName)}: {`);
+		lines.push(`  label: "${groupName}"`);
+		const groupCtx: RenderContext = { ...ctx, prefix: `${sanitizeId(groupName)}.` };
+		renderSymbolsBlock(lines, groupSymbols, groupCtx, "  ");
 		lines.push("}");
-		lines.push("");
 	}
+}
+
+function registerNode(ctx: RenderContext, name: string, filePath?: string): string {
+	const id = `${ctx.prefix}${sanitizeId(name)}`;
+	ctx.nodeIds.set(name, id);
+	// Also override the file-path key so edges resolved by path point at the
+	// container-prefixed id, not the non-prefixed placeholder from seedNameMap.
+	if (filePath) ctx.nodeIds.set(normalizeFilePath(filePath, ctx.options.targetDir), id);
+	return sanitizeId(name);
 }
 
 function renderSymbolsBlock(
 	lines: string[],
 	symbols: SymbolTable,
-	options: DiagramOptions,
-	declared: Set<string>,
+	ctx: RenderContext,
+	indent: string,
 ): void {
 	for (const cls of [...symbols.classes].sort((a, b) => a.name.localeCompare(b.name))) {
-		if (declared.has(cls.name)) continue;
-		declared.add(cls.name);
-		renderClass(lines, cls, options);
+		if (ctx.declared.has(cls.name)) continue;
+		ctx.declared.add(cls.name);
+		renderClass(lines, cls, ctx, indent);
 	}
 
-	if (options.showStores) {
+	if (ctx.options.showStores) {
 		for (const store of [...symbols.stores].sort((a, b) => a.name.localeCompare(b.name))) {
-			if (declared.has(store.name)) continue;
-			declared.add(store.name);
-			renderStore(lines, store);
+			if (ctx.declared.has(store.name)) continue;
+			ctx.declared.add(store.name);
+			renderStore(lines, store, ctx, indent);
 		}
 	}
 
-	if (options.showProps) {
+	if (ctx.options.showProps) {
 		const propMap = groupPropsByComponent(symbols.props);
 		for (const comp of [...symbols.components].sort((a, b) => a.name.localeCompare(b.name))) {
-			if (declared.has(comp.name)) continue;
-			declared.add(comp.name);
+			if (ctx.declared.has(comp.name)) continue;
+			ctx.declared.add(comp.name);
 			const key = `${comp.filePath}::${comp.name}`;
-			const compProps = propMap.get(key) ?? [];
-			renderComponent(lines, comp.name, compProps, options);
+			renderComponent(lines, comp.name, propMap.get(key) ?? [], ctx, indent, comp.filePath);
 		}
 	}
 
 	for (const fn of [...symbols.functions].sort((a, b) => a.name.localeCompare(b.name))) {
-		if (declared.has(fn.name)) continue;
-		declared.add(fn.name);
-		const fnStereotype = fn.isExported ? " <<Exported>>" : "";
-		lines.push(`class "${fn.name}" <<function>>${fnStereotype} {`);
-		lines.push("}");
-		lines.push("");
+		if (ctx.declared.has(fn.name)) continue;
+		ctx.declared.add(fn.name);
+		const local = registerNode(ctx, fn.name, fn.filePath);
+		const stereotypes = fn.isExported ? ["function", "Exported"] : ["function"];
+		lines.push(`${indent}${local}: {`);
+		lines.push(`${indent}  shape: class`);
+		lines.push(`${indent}  label: "${fn.name}"`);
+		lines.push(`${indent}  class: ${renderClassRef(stereotypes)}`);
+		lines.push(`${indent}}`);
 	}
 
 	for (const route of [...(symbols.routes ?? [])].sort((a, b) => a.name.localeCompare(b.name))) {
-		if (declared.has(route.name)) continue;
-		declared.add(route.name);
-		renderRoute(lines, route);
+		if (ctx.declared.has(route.name)) continue;
+		ctx.declared.add(route.name);
+		renderRoute(lines, route, ctx, indent);
 	}
 }
 
@@ -133,31 +150,30 @@ export function renderClassDiagram(
 	options: DiagramOptions,
 ): string {
 	const lines: string[] = [];
-	const declaredNames = new Set<string>();
 	const title = options.title ?? "Diagram";
-	lines.push(`@startuml ${title}`);
-	lines.push("skinparam classAttributeIconSize 0");
-	lines.push("");
+	lines.push(`# ${title}`);
 
 	const filteredComponents = filterHiddenComponents(symbols.components ?? []);
-
 	const focusedComponents = applyFocusFilter(filteredComponents);
-
-	const withFocus = {
-		...symbols,
-		components: focusedComponents,
-	};
 
 	const filteredComponentSet = new Set(filteredComponents);
 	const hiddenNames = new Set(
 		symbols.components.filter((c) => !filteredComponentSet.has(c)).map((c) => c.name),
 	);
 
-	const nameMap = buildNameMap(withFocus, options.targetDir);
+	const ctx: RenderContext = {
+		options,
+		declared: new Set<string>(),
+		nodeIds: new Map<string, string>(),
+		prefix: "",
+	};
+
+	const withFocus = { ...symbols, components: focusedComponents };
+	seedNameMap(ctx, withFocus, options.targetDir);
 
 	const groups = collectGroups(symbols);
 	if (groups.size > 0) {
-		renderGroupedSymbols(lines, symbols, options, declaredNames);
+		renderGroupedSymbols(lines, symbols, ctx);
 	}
 
 	const ungrouped: SymbolTable = {
@@ -170,7 +186,7 @@ export function renderClassDiagram(
 		routes: (symbols.routes ?? []).filter(isUngrouped),
 		components: (symbols.components ?? []).filter(isUngrouped),
 	};
-	renderSymbolsBlock(lines, ungrouped, options, declaredNames);
+	renderSymbolsBlock(lines, ungrouped, ctx, "");
 
 	const sortedEdges = [...edgeSet.edges].sort((a, b) => {
 		const bySource = a.source.localeCompare(b.source);
@@ -181,161 +197,175 @@ export function renderClassDiagram(
 	});
 	for (const edge of sortedEdges) {
 		if (hiddenNames.has(edge.source) || hiddenNames.has(edge.target)) continue;
-		renderEdge(lines, edge, nameMap, options.targetDir);
+		renderEdge(lines, edge, ctx.nodeIds, options.targetDir);
 	}
 
-	lines.push("@enduml");
 	return lines.join("\n");
 }
 
-function buildNameMap(symbols: SymbolTable, targetDir?: string): Map<string, string> {
-	const map = new Map<string, string>();
-	for (const cls of symbols.classes) {
-		map.set(cls.name, sanitizeId(cls.name));
-		map.set(normalizeFilePath(cls.filePath, targetDir), sanitizeId(cls.name));
-	}
-	for (const store of symbols.stores) {
-		map.set(store.name, sanitizeId(store.name));
-		map.set(normalizeFilePath(store.filePath, targetDir), sanitizeId(store.name));
-	}
-	for (const fn of symbols.functions) {
-		map.set(fn.name, sanitizeId(fn.name));
-		map.set(normalizeFilePath(fn.filePath, targetDir), sanitizeId(fn.name));
-	}
-	for (const route of symbols.routes ?? []) {
-		map.set(route.name, sanitizeId(route.name));
-		map.set(normalizeFilePath(route.filePath, targetDir), sanitizeId(route.name));
-	}
-	for (const comp of symbols.components) {
-		map.set(comp.name, sanitizeId(comp.name));
-		map.set(normalizeFilePath(comp.filePath, targetDir), sanitizeId(comp.name));
-	}
-	return map;
+// Pre-populate name/filepath lookups so edges can resolve endpoints by either.
+function seedNameMap(ctx: RenderContext, symbols: SymbolTable, targetDir?: string): void {
+	const add = (name: string, filePath: string) => {
+		ctx.nodeIds.set(name, sanitizeId(name));
+		ctx.nodeIds.set(normalizeFilePath(filePath, targetDir), sanitizeId(name));
+	};
+	for (const cls of symbols.classes) add(cls.name, cls.filePath);
+	for (const store of symbols.stores) add(store.name, store.filePath);
+	for (const fn of symbols.functions) add(fn.name, fn.filePath);
+	for (const route of symbols.routes ?? []) add(route.name, route.filePath);
+	for (const comp of symbols.components) add(comp.name, comp.filePath);
 }
 
-function renderClass(lines: string[], cls: ClassSymbol, options: DiagramOptions): void {
-	const keyword =
+function classStereotypes(cls: ClassSymbol): string[] {
+	const base: string[] =
 		cls.kind === "interface"
-			? "interface"
+			? ["interface"]
 			: cls.kind === "abstract-class"
-				? "abstract class"
-				: "class";
-	const exportedStereotype = cls.isExported ? " <<Exported>>" : "";
-	lines.push(`${keyword} "${cls.name}" as ${sanitizeId(cls.name)}${exportedStereotype} {`);
-	if (options.showMembers) {
+				? ["abstract_class"]
+				: [];
+	if (cls.isExported) base.push("Exported");
+	return base;
+}
+
+function renderClass(lines: string[], cls: ClassSymbol, ctx: RenderContext, indent: string): void {
+	const local = registerNode(ctx, cls.name, cls.filePath);
+	lines.push(`${indent}${local}: {`);
+	lines.push(`${indent}  shape: class`);
+	lines.push(`${indent}  label: "${cls.name}"`);
+	const stereotypes = classStereotypes(cls);
+	if (stereotypes.length > 0) lines.push(`${indent}  class: ${renderClassRef(stereotypes)}`);
+	if (ctx.options.showMembers) {
 		for (const member of cls.members) {
-			if (member.kind === "method" && !options.showMethods) continue;
-			const vis = mapVisibility(member.visibility, options.showVisibility);
+			if (member.kind === "method" && !ctx.options.showMethods) continue;
+			const vis = mapVisibility(member.visibility, ctx.options.showVisibility);
 			if (member.kind === "property") {
-				lines.push(`  ${vis}${member.name}: ${member.type}`);
+				lines.push(`${indent}  "${vis}${member.name}": "${member.type}"`);
 			} else {
 				const params = member.parameters?.map((p) => `${p.name}: ${p.type}`).join(", ") ?? "";
 				const ret = member.returnType ?? member.type;
-				lines.push(`  ${vis}${member.name}(${params}): ${ret}`);
+				lines.push(`${indent}  "${vis}${member.name}(${params})": "${ret}"`);
 			}
 		}
 	}
-	lines.push("}");
-	lines.push("");
+	lines.push(`${indent}}`);
 }
 
-function renderStore(lines: string[], store: StoreSymbol): void {
+function renderStore(
+	lines: string[],
+	store: StoreSymbol,
+	ctx: RenderContext,
+	indent: string,
+): void {
+	const local = registerNode(ctx, store.name, store.filePath);
 	const stereotype =
 		store.runeKind === "state" ? "state" : store.runeKind === "derived" ? "derived" : "store";
-	const exportedStereotype = store.isExported ? " <<Exported>>" : "";
-	lines.push(`class "${store.name}" <<${stereotype}>>${exportedStereotype} {`);
-	lines.push(`  storeType: ${store.storeType}`);
-	lines.push(`  valueType: ${store.valueType}`);
-	lines.push("}");
-	lines.push("");
+	const stereotypes = store.isExported ? [stereotype, "Exported"] : [stereotype];
+	lines.push(`${indent}${local}: {`);
+	lines.push(`${indent}  shape: class`);
+	lines.push(`${indent}  label: "${store.name}"`);
+	lines.push(`${indent}  class: ${renderClassRef(stereotypes)}`);
+	lines.push(`${indent}  "storeType": "${store.storeType}"`);
+	lines.push(`${indent}  "valueType": "${store.valueType}"`);
+	lines.push(`${indent}}`);
 }
 
 function renderComponent(
 	lines: string[],
 	name: string,
 	props: PropSymbol[],
-	options: DiagramOptions,
-	color?: string,
+	ctx: RenderContext,
+	indent: string,
+	filePath?: string,
 ): void {
-	const hash = color?.startsWith("#") ? "" : "#";
-	const colorSuffix = color ? ` ${hash}${color}` : "";
-	lines.push(`class "${name}" <<component>>${colorSuffix} {`);
-	if (options.showMembers) {
+	const local = registerNode(ctx, name, filePath);
+	lines.push(`${indent}${local}: {`);
+	lines.push(`${indent}  shape: class`);
+	lines.push(`${indent}  label: "${name}"`);
+	lines.push(`${indent}  class: [component]`);
+	if (ctx.options.showMembers) {
 		for (const prop of props) {
 			const suffix = prop.isRequired ? "" : "?";
-			lines.push(`  + ${prop.name}${suffix}: ${prop.type}`);
+			lines.push(`${indent}  "+ ${prop.name}${suffix}": "${prop.type}"`);
 		}
 	}
-	lines.push("}");
-	lines.push("");
+	lines.push(`${indent}}`);
 }
 
-function renderRoute(lines: string[], route: RouteSymbol): void {
-	const stereotype = routeStereotype(route);
-	lines.push(`class "${route.name}" as ${sanitizeId(route.name)} <<${stereotype}>> {`);
-	lines.push(`  path: ${route.routeSegment.raw}`);
+function renderRoute(
+	lines: string[],
+	route: RouteSymbol,
+	ctx: RenderContext,
+	indent: string,
+): void {
+	const local = registerNode(ctx, route.name, route.filePath);
+	const stereotype = sanitizeStereotype(routeStereotype(route));
+	lines.push(`${indent}${local}: {`);
+	lines.push(`${indent}  shape: class`);
+	lines.push(`${indent}  label: "${route.name}"`);
+	lines.push(`${indent}  class: ${renderClassRef([stereotype])}`);
+	lines.push(`${indent}  "path": "${route.routeSegment.raw}"`);
 	for (const param of route.routeSegment.params) {
 		const matcherSuffix = param.matcher ? `=${param.matcher}` : "";
-		lines.push(`  ${param.kind} ${param.name}${matcherSuffix}`);
+		lines.push(`${indent}  "${param.kind} ${param.name}${matcherSuffix}": ""`);
 	}
 	for (const group of route.routeSegment.groups) {
-		lines.push(`  group: ${group}`);
+		lines.push(`${indent}  "group: ${group}": ""`);
 	}
-	lines.push("}");
-	lines.push("");
+	lines.push(`${indent}}`);
+}
+
+interface EdgeStyle {
+	label?: string;
+	dash: number;
 }
 
 function renderEdge(
 	lines: string[],
 	edge: { source: string; target: string; type: EdgeType; label?: string },
-	nameMap: Map<string, string>,
+	nodeIds: Map<string, string>,
 	targetDir?: string,
 ): void {
-	const { from, to, arrow } = orientEdge(edge);
-	const labelText = edge.label ? ` : ${edge.label}` : "";
+	const { from, to } = orientEdge(edge);
+	const style = mapEdge(edge.type);
+	const label = edge.label ?? style.label;
 	const normalizedFrom = normalizeFilePath(from, targetDir);
 	const normalizedTo = normalizeFilePath(to, targetDir);
-	const fromId = nameMap.get(normalizedFrom) ?? sanitizeId(normalizedFrom);
-	const toId = nameMap.get(normalizedTo) ?? sanitizeId(normalizedTo);
-	lines.push(`${fromId} ${arrow} ${toId}${labelText}`);
+	const fromId = nodeIds.get(normalizedFrom) ?? sanitizeId(normalizedFrom);
+	const toId = nodeIds.get(normalizedTo) ?? sanitizeId(normalizedTo);
+	const labelPart = label ? `: "${label}"` : "";
+	lines.push(`${fromId} -> ${toId}${labelPart} { style.stroke-dash: ${style.dash} }`);
 }
 
 function orientEdge(edge: { source: string; target: string; type: EdgeType }): {
 	from: string;
 	to: string;
-	arrow: string;
 } {
-	const arrow = mapEdgeArrow(edge.type);
 	if (edge.type === "extends") {
-		return { from: edge.target, to: edge.source, arrow };
+		return { from: edge.target, to: edge.source };
 	}
-	return { from: edge.source, to: edge.target, arrow };
+	return { from: edge.source, to: edge.target };
 }
 
-function mapEdgeArrow(type: EdgeType): string {
+function mapEdge(type: EdgeType): EdgeStyle {
 	switch (type) {
 		case "extends":
-			return "<|--";
+			return { label: "extends", dash: 0 };
 		case "implements":
-			return "..|>";
+			return { label: "implements", dash: 3 };
 		case "composition":
-			return "*--";
+			return { label: "composition", dash: 0 };
 		case "aggregation":
-			return "o--";
+			return { label: "aggregation", dash: 0 };
 		case "dependency":
-			return "..>";
-		case "association":
-			return "-->";
 		case "state_dependency":
-			return "..>";
-		case "prop_flow":
-			return "-->";
 		case "event":
 		case "slot":
 		case "server_load":
-			return "..>";
+			return { dash: 3 };
+		case "association":
+		case "prop_flow":
 		case "component_usage":
-			return "-->";
+			return { dash: 0 };
 	}
 }
 

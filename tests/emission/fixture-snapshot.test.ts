@@ -13,8 +13,8 @@ function makeCliOptions(overrides: Partial<CliOptions> = {}): CliOptions {
 	return {
 		subcommand: "generate",
 		targetDir: FIXTURE_DIR,
-		outputPath: join(testOutputDir, "snapshot-output.puml"),
-		format: "text",
+		outputPath: join(testOutputDir, "snapshot-output.d2"),
+		format: "d2",
 		excludeExternals: false,
 		maxDepth: 0,
 		exclude: [],
@@ -52,9 +52,9 @@ describe("E4.6 — Snapshot tests on fixture corpus (round-trip lock-in)", () =>
 			classOutput = readFileSync(opts.outputPath ?? "", "utf-8");
 		});
 
-		it("produces valid PlantUML with @startuml/@enduml", () => {
-			expect(classOutput).toContain("@startuml");
-			expect(classOutput).toContain("@enduml");
+		it("produces valid D2 with # and direction:", () => {
+			expect(classOutput).toContain("# ");
+			expect(classOutput).toContain("direction:");
 		});
 
 		it("includes all expected component vertices", () => {
@@ -83,16 +83,16 @@ describe("E4.6 — Snapshot tests on fixture corpus (round-trip lock-in)", () =>
 
 		beforeAll(async () => {
 			const result = await runPipeline(
-				makeCliOptions({ diagram: "package", outputPath: join(testOutputDir, "pkg-snap.puml") }),
+				makeCliOptions({ diagram: "package", outputPath: join(testOutputDir, "pkg-snap.d2") }),
 				{},
 			);
 			expect(result.success).toBe(true);
-			packageOutput = readFileSync(join(testOutputDir, "pkg-snap.puml"), "utf-8");
+			packageOutput = readFileSync(join(testOutputDir, "pkg-snap.d2"), "utf-8");
 		});
 
-		it("produces valid PlantUML package diagram", () => {
-			expect(packageOutput).toContain("@startuml");
-			expect(packageOutput).toContain("@enduml");
+		it("produces valid D2 package diagram", () => {
+			expect(packageOutput).toContain("# ");
+			expect(packageOutput).toContain("direction:");
 		});
 
 		it("snapshot locks package diagram output", () => {
@@ -107,10 +107,10 @@ describe("E4.6 — Snapshot tests on fixture corpus (round-trip lock-in)", () =>
 			const output1 = readFileSync(opts.outputPath ?? "", "utf-8");
 
 			const result2 = await runPipeline(
-				{ ...opts, outputPath: join(testOutputDir, "run2.puml") },
+				{ ...opts, outputPath: join(testOutputDir, "run2.d2") },
 				{},
 			);
-			const output2 = readFileSync(join(testOutputDir, "run2.puml"), "utf-8");
+			const output2 = readFileSync(join(testOutputDir, "run2.d2"), "utf-8");
 
 			expect(result1.success).toBe(true);
 			expect(result2.success).toBe(true);

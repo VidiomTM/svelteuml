@@ -1,6 +1,10 @@
-import { encodePlantUml } from "./plantuml-encoder.js";
+import { execFile } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { promisify } from "node:util";
 
-const PLANTUML_SERVER_BASE = "https://www.plantuml.com/plantuml";
+const execFileAsync = promisify(execFile);
 
 export interface RenderResult {
 	success: boolean;
@@ -8,45 +12,43 @@ export interface RenderResult {
 	error?: string;
 }
 
-export async function renderPlantUml(
-	plantUml: string,
+export async function renderD2(
+	source: string,
 	format: "svg" | "png",
 	timeoutMs = 15_000,
 ): Promise<RenderResult> {
+	const dir = mkdtempSync(join(tmpdir(), "svelteuml-"));
+	const inputPath = join(dir, `diagram.d2`);
+	const outputPath = join(dir, `diagram.${format}`);
+
 	try {
-		const encoded = encodePlantUml(plantUml);
-		const url = `${PLANTUML_SERVER_BASE}/${format}/${encoded}`;
-
-		const controller = new AbortController();
-		const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-		const response = await fetch(url, {
-			signal: controller.signal,
-			headers: {
-				Accept: format === "svg" ? "image/svg+xml" : "image/png",
-			},
-		});
-		clearTimeout(timer);
-
-		if (!response.ok) {
-			return {
-				success: false,
-				error: `PlantUML server returned ${response.status}: ${response.statusText}`,
-			};
-		}
-
-		const data = await response.text();
-
+		writeFileSync(inputPath, source, "utf-8");
+		await execFileAsync("d2", [inputPath, outputPath], { timeout: timeoutMs });
+		const data = readFileSync(outputPath, format === "svg" ? "utf-8" : "base64");
 		if (!data || data.length === 0) {
-			return { success: false, error: "PlantUML server returned empty response" };
+			return { success: false, error: "d2 produced empty output" };
 		}
-
 		return { success: true, data };
 	} catch (err: unknown) {
 		const message = err instanceof Error ? err.message : String(err);
-		if (message.includes("abort")) {
-			return { success: false, error: "PlantUML server request timed out" };
+		if (message.includes("ETIMEDOUT") || message.includes("timed out")) {
+			return { success: false, error: "d2 render timed out" };
 		}
-		return { success: false, error: `PlantUML render failed: ${message}` };
+		const errno = (typeof err === "object" && err !== null ? err : {}) as NodeJS.ErrnoException;
+		// Only a spawn ENOENT means the d2 binary is missing. A readFileSync
+		// ENOENT (syscall "open") means d2 ran but produced no output file.
+		if (errno.code === "ENOENT" && errno.syscall?.startsWith("spawn")) {
+			return {
+				success: false,
+				error:
+					"d2 executable not found. Install d2 from https://d2lang.com and ensure it is on your PATH.",
+			};
+		}
+		if (errno.code === "ENOENT") {
+			return { success: false, error: "d2 ran but produced no output file" };
+		}
+		return { success: false, error: `d2 render failed: ${message}` };
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
 	}
 }

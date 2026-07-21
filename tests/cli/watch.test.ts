@@ -12,7 +12,7 @@ function makeCliOpts(overrides?: Partial<CliOptions>): CliOptions {
 		subcommand: "watch",
 		targetDir: tempDir,
 		outputPath: undefined,
-		format: "text",
+		format: "d2",
 		excludeExternals: false,
 		maxDepth: 0,
 		exclude: [],

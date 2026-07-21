@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { emitPlantUML } from "../../src/emission/plantuml-emitter.js";
+import { emitD2 } from "../../src/emission/d2-emitter.js";
 import type { ComponentSymbol, SymbolTable } from "../../src/types/ast.js";
 import type { Edge, EdgeType } from "../../src/types/edge.js";
 import { createEdgeSet } from "../../src/types/edge.js";
@@ -84,33 +84,24 @@ function arbComponentGraph(): fc.Arbitrary<{
 
 const numRuns = Number(process.env.VITEST_PBT_NUM_RUNS) || 1000;
 
-describe("PlantUML emission property tests", () => {
-	it("output always starts with @startuml and ends with @enduml", () => {
+describe("D2 emission property tests", () => {
+	it("output always starts with a title comment", () => {
 		fc.assert(
 			fc.property(arbComponentGraph(), ({ symbols, edges }) => {
-				const result = emitPlantUML(symbols, createEdgeSet(edges));
-				const content = result.content.trim();
-				expect(content.startsWith("@startuml")).toBe(true);
-				expect(content.endsWith("@enduml")).toBe(true);
+				const result = emitD2(symbols, createEdgeSet(edges));
+				expect(result.content.startsWith("#")).toBe(true);
 			}),
 			{ numRuns },
 		);
 	});
 
-	it("no duplicate declarations for any symbol", () => {
+	it("no component is declared more than once", () => {
 		fc.assert(
 			fc.property(arbComponentGraph(), ({ symbols, edges }) => {
-				const result = emitPlantUML(symbols, createEdgeSet(edges));
-				const lines = result.content.split("\n");
-				const seen = new Set<string>();
-				for (const raw of lines) {
-					const line = raw.trim();
-					const match = /^(?:class|interface|abstract\s+class)\s+"([^"]+)"/.exec(line);
-					if (match) {
-						const name = match[1];
-						expect(seen.has(name)).toBe(false);
-						seen.add(name);
-					}
+				const content = emitD2(symbols, createEdgeSet(edges)).content;
+				for (const comp of symbols.components) {
+					const occurrences = content.split(`label: "${comp.name}"`).length - 1;
+					expect(occurrences).toBe(1);
 				}
 			}),
 			{ numRuns },
@@ -120,10 +111,9 @@ describe("PlantUML emission property tests", () => {
 	it("all components appear in output", () => {
 		fc.assert(
 			fc.property(arbComponentGraph(), ({ symbols, edges }) => {
-				const result = emitPlantUML(symbols, createEdgeSet(edges));
-				const content = result.content;
+				const content = emitD2(symbols, createEdgeSet(edges)).content;
 				for (const comp of symbols.components) {
-					expect(content).toContain(`class "${comp.name}" <<component>>`);
+					expect(content).toContain(`label: "${comp.name}"`);
 				}
 			}),
 			{ numRuns },

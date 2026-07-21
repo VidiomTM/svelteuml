@@ -2,8 +2,14 @@ import type { SymbolTable } from "../types/ast.js";
 import type { DiagramOptions } from "../types/diagram.js";
 import type { EdgeSet } from "../types/edge.js";
 import { normalizeFilePath } from "../utils/path.js";
+import { renderClassRef } from "./d2-utils.js";
 import { getGroupForFile } from "./groups.js";
 import { routeStereotype } from "./route-utils.js";
+
+interface PackageMember {
+	name: string;
+	stereotypes: string[];
+}
 
 export function renderPackageDiagram(
 	symbols: SymbolTable,
@@ -12,22 +18,21 @@ export function renderPackageDiagram(
 ): string {
 	const lines: string[] = [];
 	const title = options.title ?? "Package Diagram";
-	lines.push(`@startuml ${title}`);
-	lines.push("");
+	lines.push(`# ${title}`);
 
 	const packages = buildPackages(symbols, options);
 
 	const sortedPackageKeys = [...packages.keys()].sort((a, b) => a.localeCompare(b));
-	const sortedPackages = sortedPackageKeys.map(
-		(pkg) => [pkg, [...(packages.get(pkg) ?? [])].sort((a, b) => a.localeCompare(b))] as const,
-	);
-	for (const [pkg, sortedEntries] of sortedPackages) {
-		lines.push(`package "${pkg}" as ${sanitizeId(pkg)} {`);
-		for (const entry of sortedEntries) {
-			lines.push(`  ${entry}`);
+	for (const pkg of sortedPackageKeys) {
+		const members = packages.get(pkg) ?? new Map<string, PackageMember>();
+		const sortedMembers = [...members.values()].sort((a, b) => a.name.localeCompare(b.name));
+		lines.push(`${sanitizeId(pkg)}: {`);
+		lines.push(`  label: "${pkg}"`);
+		for (const member of sortedMembers) {
+			const ref = renderClassRef(member.stereotypes);
+			lines.push(ref ? `  "${member.name}": { class: ${ref} }` : `  "${member.name}"`);
 		}
 		lines.push("}");
-		lines.push("");
 	}
 
 	const edgeWeights = new Map<string, { source: string; target: string; weight: number }>();
@@ -48,78 +53,66 @@ export function renderPackageDiagram(
 	}
 
 	for (const { source, target, weight } of edgeWeights.values()) {
-		lines.push(`${sanitizeId(source)} ..> ${sanitizeId(target)} : ${weight}`);
-	}
-
-	if (edgeWeights.size > 0) lines.push("");
-	lines.push("@enduml");
-	return lines.join("\n");
-}
-
-function buildPackages(symbols: SymbolTable, options: DiagramOptions): Map<string, string[]> {
-	const packages = new Map<string, string[]>();
-	const groups = options.groups ?? [];
-
-	const addEntry = (filePath: string, line: string) => {
-		const normalized = normalizeFilePath(filePath, options.targetDir);
-		const pkg = getGroupForFile(normalized, groups) ?? extractPackage(normalized);
-		if (!pkg) return;
-		let entries = packages.get(pkg);
-		if (!entries) {
-			entries = [];
-			packages.set(pkg, entries);
-		}
-		entries.push(line);
-	};
-
-	const sortedClasses = [...symbols.classes].sort((a, b) => a.name.localeCompare(b.name));
-	for (const cls of sortedClasses) {
-		const exported = cls.isExported ? " <<Exported>>" : "";
-		addEntry(
-			cls.filePath,
-			`${cls.kind === "interface" ? "interface" : "class"} ${cls.name}${exported}`,
+		lines.push(
+			`${sanitizeId(source)} -> ${sanitizeId(target)}: "${weight}" { style.stroke-dash: 3 }`,
 		);
 	}
 
+	return lines.join("\n");
+}
+
+function buildPackages(
+	symbols: SymbolTable,
+	options: DiagramOptions,
+): Map<string, Map<string, PackageMember>> {
+	const packages = new Map<string, Map<string, PackageMember>>();
+	const groups = options.groups ?? [];
+
+	const addEntry = (filePath: string, name: string, stereotypes: string[]) => {
+		const normalized = normalizeFilePath(filePath, options.targetDir);
+		const pkg = getGroupForFile(normalized, groups) ?? extractPackage(normalized);
+		if (!pkg) return;
+		let members = packages.get(pkg);
+		if (!members) {
+			members = new Map<string, PackageMember>();
+			packages.set(pkg, members);
+		}
+		if (members.has(name)) return;
+		members.set(name, { name, stereotypes });
+	};
+
+	for (const cls of symbols.classes) {
+		const kind = cls.kind === "interface" ? "interface" : "class";
+		addEntry(cls.filePath, cls.name, cls.isExported ? [kind, "Exported"] : [kind]);
+	}
+
 	if (options.showStores) {
-		const sortedStores = [...symbols.stores].sort((a, b) => a.name.localeCompare(b.name));
-		for (const store of sortedStores) {
+		for (const store of symbols.stores) {
 			const stereotype =
 				store.runeKind === "state" ? "state" : store.runeKind === "derived" ? "derived" : "store";
-			const exported = store.isExported ? " <<Exported>>" : "";
-			addEntry(store.filePath, `class "${store.name}" <<${stereotype}>>${exported}`);
+			addEntry(
+				store.filePath,
+				store.name,
+				store.isExported ? [stereotype, "Exported"] : [stereotype],
+			);
 		}
 	}
 
 	if (options.showProps) {
-		const seen = new Set<string>();
 		for (const prop of symbols.props) {
-			const key = `${prop.filePath}::${prop.componentName}`;
-			if (!seen.has(key)) {
-				seen.add(key);
-				addEntry(prop.filePath, `class "${prop.componentName}" <<component>>`);
-			}
+			addEntry(prop.filePath, prop.componentName, ["component"]);
 		}
-		const sortedComponents = [...symbols.components].sort((a, b) => a.name.localeCompare(b.name));
-		for (const comp of sortedComponents) {
-			const key = `${comp.filePath}::${comp.name}`;
-			if (!seen.has(key)) {
-				seen.add(key);
-				addEntry(comp.filePath, `class "${comp.name}" <<component>>`);
-			}
+		for (const comp of symbols.components) {
+			addEntry(comp.filePath, comp.name, ["component"]);
 		}
 	}
 
-	const sortedFunctions = [...symbols.functions].sort((a, b) => a.name.localeCompare(b.name));
-	for (const fn of sortedFunctions) {
-		const exported = fn.isExported ? " <<Exported>>" : "";
-		addEntry(fn.filePath, `class "${fn.name}" <<function>>${exported}`);
+	for (const fn of symbols.functions) {
+		addEntry(fn.filePath, fn.name, fn.isExported ? ["function", "Exported"] : ["function"]);
 	}
 
-	const sortedRoutes = [...(symbols.routes ?? [])].sort((a, b) => a.name.localeCompare(b.name));
-	for (const route of sortedRoutes) {
-		const stereotype = routeStereotype(route);
-		addEntry(route.filePath, `class "${route.name}" <<${stereotype}>>`);
+	for (const route of symbols.routes ?? []) {
+		addEntry(route.filePath, route.name, [routeStereotype(route)]);
 	}
 
 	return packages;

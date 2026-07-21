@@ -7,7 +7,7 @@ import { runPipeline } from "../../src/cli/runner.js";
 
 const FIXTURE_DIR = resolve(import.meta.dirname, "../fixtures/generated-large-5k");
 const testOutputDir = join(tmpdir(), "svelteuml-benchmark-tests");
-const OUTPUT_PATH = join(testOutputDir, "benchmark-output.puml");
+const OUTPUT_PATH = join(testOutputDir, "benchmark-output.d2");
 
 function makeCliOptions(overrides: Partial<CliOptions> = {}): CliOptions {
 	mkdirSync(testOutputDir, { recursive: true });
@@ -15,7 +15,7 @@ function makeCliOptions(overrides: Partial<CliOptions> = {}): CliOptions {
 		subcommand: "generate",
 		targetDir: FIXTURE_DIR,
 		outputPath: OUTPUT_PATH,
-		format: "text",
+		format: "d2",
 		excludeExternals: false,
 		maxDepth: 0,
 		exclude: [],
@@ -155,14 +155,14 @@ describe("E8.5 — Performance benchmark on a 5K-LOC project", () => {
 		expect(elapsed).toBeLessThan(30_000);
 	});
 
-	it("generates valid PlantUML output for 5K-LOC project", { timeout: 60_000 }, async () => {
+	it("generates valid D2 output for 5K-LOC project", { timeout: 60_000 }, async () => {
 		const result = await runPipeline(makeCliOptions(), {});
 		expect(result.success).toBe(true);
 
 		const content = readFileSync(OUTPUT_PATH, "utf-8");
-		expect(content).toContain("@startuml");
-		expect(content).toContain("@enduml");
-		const classCount = (content.match(/class "/g) ?? []).length;
+		expect(content).toContain("# ");
+		expect(content).toContain("direction:");
+		const classCount = (content.match(/shape: class/g) ?? []).length;
 		expect(classCount).toBeGreaterThan(20);
 	});
 });

@@ -7,8 +7,8 @@ import type { SvelteUMLConfig } from "../../src/types/index.js";
 function makeConfig(): SvelteUMLConfig {
 	return {
 		targetDir: "/project",
-		outputPath: "diagram.puml",
-		format: "text",
+		outputPath: "diagram.d2",
+		format: "d2",
 		include: ["**/*.ts", "**/*.svelte"],
 		exclude: [],
 		maxDepth: 10,

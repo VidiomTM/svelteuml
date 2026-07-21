@@ -70,12 +70,12 @@ vi.mock("../../src/dependency/reactive-tracker.js", () => ({
 	trackReactiveDependencies: vi.fn().mockReturnValue([]),
 }));
 
-vi.mock("../../src/emission/plantuml-emitter.js", () => ({
-	emitPlantUML: vi.fn().mockReturnValue({ content: "@startuml\n@enduml" }),
+vi.mock("../../src/emission/d2-emitter.js", () => ({
+	emitD2: vi.fn().mockReturnValue({ content: "# Diagram" }),
 }));
 
 vi.mock("../../src/emission/renderer.js", () => ({
-	renderPlantUml: vi.fn().mockResolvedValue({ success: false, error: "mock fallback" }),
+	renderD2: vi.fn().mockResolvedValue({ success: false, error: "mock fallback" }),
 }));
 
 import { existsSync, writeFileSync } from "node:fs";
@@ -89,7 +89,7 @@ function makeCliOpts(overrides: Partial<CliOptions> = {}): CliOptions {
 		subcommand: "generate",
 		targetDir: "/tmp/project",
 		outputPath: undefined,
-		format: "text",
+		format: "d2",
 		excludeExternals: false,
 		maxDepth: 0,
 		exclude: [],
@@ -124,7 +124,7 @@ describe("src/cli/runner.ts", () => {
 			const result = buildCliConfig(cliOpts, {});
 
 			expect(result.targetDir).toBe(resolve("/tmp/project"));
-			expect(result.outputPath).toBe(resolve("diagram.puml"));
+			expect(result.outputPath).toBe(resolve("diagram.d2"));
 			expect(result.excludeExternals).toBe(false);
 			expect(result.maxDepth).toBe(0);
 		});
@@ -163,10 +163,10 @@ describe("src/cli/runner.ts", () => {
 		});
 
 		it("uses CLI outputPath when provided", () => {
-			const cliOpts = makeCliOpts({ outputPath: "/custom/output.puml" });
+			const cliOpts = makeCliOpts({ outputPath: "/custom/output.d2" });
 			const result = buildCliConfig(cliOpts, {});
 
-			expect(result.outputPath).toBe(resolve("/custom/output.puml"));
+			expect(result.outputPath).toBe(resolve("/custom/output.d2"));
 		});
 
 		it("sets maxDepth from CLI when non-zero", () => {
@@ -266,17 +266,17 @@ describe("src/cli/runner.ts", () => {
 			expect(result.success).toBe(false);
 		});
 
-		it("writes file when format is not text or outputPath is set", async () => {
-			const cliOpts = makeCliOpts({ format: "text", outputPath: "/tmp/out.puml" });
+		it("writes file when format is not d2 or outputPath is set", async () => {
+			const cliOpts = makeCliOpts({ format: "d2", outputPath: "/tmp/out.d2" });
 			const result = await runPipeline(cliOpts, {});
 
 			expect(result.success).toBe(true);
-			expect(result.outputPath).toBe(resolve("/tmp/out.puml"));
+			expect(result.outputPath).toBe(resolve("/tmp/out.d2"));
 		});
 
 		it("writes file for svg format without outputPath", async () => {
-			const { renderPlantUml } = await import("../../src/emission/renderer.js");
-			vi.mocked(renderPlantUml).mockResolvedValueOnce({
+			const { renderD2 } = await import("../../src/emission/renderer.js");
+			vi.mocked(renderD2).mockResolvedValueOnce({
 				success: true,
 				data: "<svg></svg>",
 			});
@@ -288,11 +288,11 @@ describe("src/cli/runner.ts", () => {
 			expect(result.outputPath).toBe(resolve("diagram.svg"));
 		});
 
-		it("returns success for text format without outputPath (stdout)", async () => {
+		it("returns success for d2 format without outputPath (stdout)", async () => {
 			const originalWrite = process.stdout.write;
 			process.stdout.write = vi.fn().mockReturnValue(true);
 
-			const cliOpts = makeCliOpts({ format: "text" });
+			const cliOpts = makeCliOpts({ format: "d2" });
 			const result = await runPipeline(cliOpts, {});
 
 			expect(result.success).toBe(true);
@@ -376,8 +376,8 @@ describe("src/cli/runner.ts", () => {
 		});
 
 		it("handles svg format output via renderer", async () => {
-			const { renderPlantUml } = await import("../../src/emission/renderer.js");
-			vi.mocked(renderPlantUml).mockResolvedValueOnce({
+			const { renderD2 } = await import("../../src/emission/renderer.js");
+			vi.mocked(renderD2).mockResolvedValueOnce({
 				success: true,
 				data: "<svg></svg>",
 			});
@@ -389,8 +389,8 @@ describe("src/cli/runner.ts", () => {
 		});
 
 		it("handles png format with render failure fallback", async () => {
-			const { renderPlantUml } = await import("../../src/emission/renderer.js");
-			vi.mocked(renderPlantUml).mockResolvedValueOnce({
+			const { renderD2 } = await import("../../src/emission/renderer.js");
+			vi.mocked(renderD2).mockResolvedValueOnce({
 				success: false,
 				error: "server error",
 			});

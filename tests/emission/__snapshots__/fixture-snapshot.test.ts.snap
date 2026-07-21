@@ -1,159 +1,180 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`E4.6 — Snapshot tests on fixture corpus (round-trip lock-in) > class diagram on sveltekit-synthetic fixture > snapshot locks class diagram output 1`] = `
-"@startuml Diagram
-skinparam classAttributeIconSize 0
-
-top to bottom direction
-
-interface "CartItem" as CartItem {
-  + id: string
-  + name: string
-  + quantity: number
+"# Diagram
+direction: down
+CartItem: {
+  shape: class
+  label: "CartItem"
+  class: interface
+  "+ id": "string"
+  "+ name": "string"
+  "+ quantity": "number"
 }
-
-interface "Product" as Product {
-  + id: string
-  + name: string
-  + price: number
+Product: {
+  shape: class
+  label: "Product"
+  class: interface
+  "+ id": "string"
+  "+ name": "string"
+  "+ price": "number"
 }
-
-class "cart" <<state>> {
-  storeType: writable
-  valueType: { length: number }
+cart: {
+  shape: class
+  label: "cart"
+  class: state
+  "storeType": "writable"
+  "valueType": "{ length: number }"
 }
-
-class "productCount" <<store>> {
-  storeType: derived
-  valueType: unknown
+productCount: {
+  shape: class
+  label: "productCount"
+  class: store
+  "storeType": "derived"
+  "valueType": "unknown"
 }
-
-class "products" <<store>> {
-  storeType: writable
-  valueType: Product[]
+products: {
+  shape: class
+  label: "products"
+  class: store
+  "storeType": "writable"
+  "valueType": "Product[]"
 }
-
-class "+error" <<component>> {
-  + error: unknown
-  + status: unknown
+_error: {
+  shape: class
+  label: "+error"
+  class: [component]
+  "+ error": "unknown"
+  "+ status": "unknown"
 }
-
-class "+layout" <<component>> {
-  + children: unknown
+_layout: {
+  shape: class
+  label: "+layout"
+  class: [component]
+  "+ children": "unknown"
 }
-
-class "+page" <<component>> {
+_page: {
+  shape: class
+  label: "+page"
+  class: [component]
 }
-
-class "Card" <<component>> {
-  + label: unknown
-  + onClick: unknown
+Card: {
+  shape: class
+  label: "Card"
+  class: [component]
+  "+ label": "unknown"
+  "+ onClick": "unknown"
 }
-
-class "Header" <<component>> {
-  + title: unknown
+Header: {
+  shape: class
+  label: "Header"
+  class: [component]
+  "+ title": "unknown"
 }
-
-class "addItem" <<function>> <<Exported>> {
+addItem: {
+  shape: class
+  label: "addItem"
+  class: [function; Exported]
 }
-
-class "addProduct" <<function>> <<Exported>> {
+addProduct: {
+  shape: class
+  label: "addProduct"
+  class: [function; Exported]
 }
-
-class "clearCart" <<function>> <<Exported>> {
+clearCart: {
+  shape: class
+  label: "clearCart"
+  class: [function; Exported]
 }
-
-class "formatDate" <<function>> <<Exported>> {
+formatDate: {
+  shape: class
+  label: "formatDate"
+  class: [function; Exported]
 }
-
-class "GET" <<function>> <<Exported>> {
+GET: {
+  shape: class
+  label: "GET"
+  class: [function; Exported]
 }
-
-class "load" <<function>> <<Exported>> {
+load: {
+  shape: class
+  label: "load"
+  class: [function; Exported]
 }
-
-class "POST" <<function>> <<Exported>> {
+POST: {
+  shape: class
+  label: "POST"
+  class: [function; Exported]
 }
-
-class "removeItem" <<function>> <<Exported>> {
+removeItem: {
+  shape: class
+  label: "removeItem"
+  class: [function; Exported]
 }
-
-class "slugify" <<function>> <<Exported>> {
+slugify: {
+  shape: class
+  label: "slugify"
+  class: [function; Exported]
 }
-
-class "truncate" <<function>> <<Exported>> {
+truncate: {
+  shape: class
+  label: "truncate"
+  class: [function; Exported]
 }
-
-class "+layout.server" as _layout_server <<LayoutLoad>> {
-  path: /
+_layout_server: {
+  shape: class
+  label: "+layout.server"
+  class: LayoutLoad
+  "path": "/"
 }
-
-class "+page.server" as _page_server <<PageLoad>> {
-  path: /products/[id]
-  dynamic id
+_page_server: {
+  shape: class
+  label: "+page.server"
+  class: PageLoad
+  "path": "/products/[id]"
+  "dynamic id": ""
 }
-
-class "+server" as _server <<endpoint>> {
-  path: /api/items
+_server: {
+  shape: class
+  label: "+server"
+  class: endpoint
+  "path": "/api/items"
 }
-
-_page ..> removeItem : $cart <<store-subscription>>
-_page ..> addProduct : $products <<store-subscription>>
-@enduml"
+_page -> removeItem: "$cart <<store-subscription>>" { style.stroke-dash: 3 }
+_page -> addProduct: "$products <<store-subscription>>" { style.stroke-dash: 3 }"
 `;
 
 exports[`E4.6 — Snapshot tests on fixture corpus (round-trip lock-in) > package diagram on sveltekit-synthetic fixture > snapshot locks package diagram output 1`] = `
-"@startuml Package Diagram
-
-top to bottom direction
-
-package "lib" as lib {
-  class "addItem" <<function>> <<Exported>>
-  class "addProduct" <<function>> <<Exported>>
-  class "Card" <<component>>
-  class "cart" <<state>>
-  class "clearCart" <<function>> <<Exported>>
-  class "formatDate" <<function>> <<Exported>>
-  class "Header" <<component>>
-  class "productCount" <<store>>
-  class "products" <<store>>
-  class "removeItem" <<function>> <<Exported>>
-  class "slugify" <<function>> <<Exported>>
-  class "truncate" <<function>> <<Exported>>
-  interface CartItem
-  interface Product
+"# Package Diagram
+direction: down
+lib: {
+  label: "lib"
+  "addItem": { class: [function; Exported] }
+  "addProduct": { class: [function; Exported] }
+  "Card": { class: component }
+  "cart": { class: state }
+  "CartItem": { class: interface }
+  "clearCart": { class: [function; Exported] }
+  "formatDate": { class: [function; Exported] }
+  "Header": { class: component }
+  "Product": { class: interface }
+  "productCount": { class: store }
+  "products": { class: store }
+  "removeItem": { class: [function; Exported] }
+  "slugify": { class: [function; Exported] }
+  "truncate": { class: [function; Exported] }
 }
-
-package "routes" as routes {
-  class "+error" <<component>>
-  class "+error" <<error-page>>
-  class "+layout.server" <<LayoutLoad>>
-  class "+layout" <<component>>
-  class "+layout" <<component>>
-  class "+layout" <<layout>>
-  class "+layout" <<layout>>
-  class "+page.server" <<PageLoad>>
-  class "+page" <<component>>
-  class "+page" <<component>>
-  class "+page" <<component>>
-  class "+page" <<component>>
-  class "+page" <<component>>
-  class "+page" <<component>>
-  class "+page" <<page>>
-  class "+page" <<page>>
-  class "+page" <<page>>
-  class "+page" <<page>>
-  class "+page" <<page>>
-  class "+page" <<page>>
-  class "+server" <<endpoint>>
-  class "GET" <<function>> <<Exported>>
-  class "load" <<function>> <<Exported>>
-  class "load" <<function>> <<Exported>>
-  class "load" <<function>> <<Exported>>
-  class "POST" <<function>> <<Exported>>
+routes: {
+  label: "routes"
+  "+error": { class: component }
+  "+layout": { class: component }
+  "+layout.server": { class: LayoutLoad }
+  "+page": { class: component }
+  "+page.server": { class: PageLoad }
+  "+server": { class: endpoint }
+  "GET": { class: [function; Exported] }
+  "load": { class: [function; Exported] }
+  "POST": { class: [function; Exported] }
 }
-
-routes ..> lib : 2
-
-@enduml"
+routes -> lib: "2" { style.stroke-dash: 3 }"
 `;

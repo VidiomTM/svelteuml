@@ -28,7 +28,7 @@ export interface CliOptions {
 	aliasGroups: string[];
 }
 
-const VALID_FORMATS: readonly OutputFormat[] = ["text", "svg", "png"];
+const VALID_FORMATS: readonly OutputFormat[] = ["d2", "svg", "png"];
 const VALID_DIAGRAM_KINDS: readonly DiagramKind[] = ["class", "package"];
 const VALID_LAYOUT_DIRECTIONS: readonly LayoutDirection[] = [
 	"top-to-bottom",
@@ -83,7 +83,7 @@ function parseMaxDepth(value: string): number {
 function addSharedOptions(cmd: Command): Command {
 	return cmd
 		.option("-o, --output <path>", "output file path")
-		.option("-f, --format <type>", "output format (text, svg, png)", parseFormat, "text")
+		.option("-f, --format <type>", "output format (d2, svg, png)", parseFormat, "d2")
 		.option("--exclude-externals", "exclude external dependencies", false)
 		.option("--max-depth <n>", "max dependency traversal depth (0 = unlimited)", parseMaxDepth, 0)
 		.option("--include [glob...]", "glob patterns to include in discovery", [])
@@ -156,7 +156,7 @@ export function parseArgs(argv: string[]): CliOptions {
 
 	const generateCmd = program
 		.command("generate")
-		.description("Generate a PlantUML diagram from a SvelteKit project");
+		.description("Generate a D2 diagram from a SvelteKit project");
 	generateCmd.argument("<target-directory>", "path to the SvelteKit project root");
 	addSharedOptions(generateCmd);
 	generateCmd.action((targetDir: string, opts: Record<string, unknown>) => {

@@ -80,10 +80,10 @@ describe("loadConfigFile", () => {
 		tempDir = join(tmpdir(), `svelteuml-test-${Date.now()}`);
 		await mkdir(tempDir, { recursive: true });
 		const configPath = join(tempDir, ".svelteumlrc");
-		await writeFile(configPath, JSON.stringify({ outputPath: "diagram.puml" }));
+		await writeFile(configPath, JSON.stringify({ outputPath: "diagram.d2" }));
 
 		const result = await loadConfigFile(configPath);
-		expect(result).toEqual({ outputPath: "diagram.puml" });
+		expect(result).toEqual({ outputPath: "diagram.d2" });
 	});
 
 	it("returns empty object for nonexistent file", async () => {

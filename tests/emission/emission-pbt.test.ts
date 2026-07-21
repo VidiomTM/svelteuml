@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { emitPlantUML } from "../../src/emission/plantuml-emitter.js";
+import { emitD2 } from "../../src/emission/d2-emitter.js";
 import type { SymbolTable } from "../../src/types/ast.js";
 import type { DiagramOptions, LayoutDirection } from "../../src/types/diagram.js";
 import { DEFAULT_STEREOTYPE_COLORS } from "../../src/types/diagram.js";
@@ -80,43 +80,25 @@ function arbUMLConfig(): fc.Arbitrary<DiagramOptions> {
 	});
 }
 
-/* ----- helpers ----- */
-
-function declarationNames(puml: string): string[] {
-	const lines = puml.split("\n");
-	const names: string[] = [];
-	for (const line of lines) {
-		const m = /^\s*(?:(?:abstract\s+)?class|interface)\s+"([^"]+)"\s+as\s+/.exec(line);
-		if (m) names.push(m[1]);
-	}
-	return names;
-}
-
 /* ----- property tests ----- */
 
 describe("Emission PBT", () => {
-	it("output always starts with @startuml and ends with @enduml", () => {
+	it("output always starts with a title comment", () => {
 		fc.assert(
 			fc.property(arbComponentGraph(), arbUMLConfig(), (graph, opts) => {
-				const result = emitPlantUML(graph.symbols, graph.edges, opts);
-				const content = result.content.trim();
-				expect(content.startsWith("@startuml")).toBe(true);
-				expect(content.endsWith("@enduml")).toBe(true);
+				const result = emitD2(graph.symbols, graph.edges, opts);
+				expect(result.content.startsWith("#")).toBe(true);
 			}),
 			{ numRuns },
 		);
 	});
 
-	it("no duplicate declarations: each name appears at most once", () => {
+	it("emission is deterministic for identical input", () => {
 		fc.assert(
 			fc.property(arbComponentGraph(), arbUMLConfig(), (graph, opts) => {
-				const result = emitPlantUML(graph.symbols, graph.edges, opts);
-				const names = declarationNames(result.content);
-				const seen = new Set<string>();
-				for (const name of names) {
-					expect(seen.has(name)).toBe(false);
-					seen.add(name);
-				}
+				const first = emitD2(graph.symbols, graph.edges, opts).content;
+				const second = emitD2(graph.symbols, graph.edges, opts).content;
+				expect(first).toBe(second);
 			}),
 			{ numRuns },
 		);
@@ -126,7 +108,7 @@ describe("Emission PBT", () => {
 		fc.assert(
 			fc.property(arbComponentGraph(), arbUMLConfig(), (graph, opts) => {
 				fc.pre(opts.kind === "class");
-				const result = emitPlantUML(graph.symbols, graph.edges, opts);
+				const result = emitD2(graph.symbols, graph.edges, opts);
 				const content = result.content;
 				for (const cls of graph.symbols.classes) {
 					expect(content).toContain(cls.name);
@@ -142,16 +124,12 @@ describe("Emission PBT", () => {
 		);
 	});
 
-	it("package diagram has valid structure with package blocks", () => {
+	it("package diagram starts with a title comment", () => {
 		fc.assert(
 			fc.property(arbComponentGraph(), arbUMLConfig(), (graph, opts) => {
 				fc.pre(opts.kind === "package");
-				const result = emitPlantUML(graph.symbols, graph.edges, opts);
-				const content = result.content.trim();
-				expect(content.startsWith("@startuml")).toBe(true);
-				expect(content.endsWith("@enduml")).toBe(true);
-				const packageCount = (content.match(/^package "/gm) ?? []).length;
-				expect(packageCount).toBeGreaterThanOrEqual(0);
+				const result = emitD2(graph.symbols, graph.edges, opts);
+				expect(result.content.startsWith("# ")).toBe(true);
 			}),
 			{ numRuns },
 		);

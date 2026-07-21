@@ -6,36 +6,39 @@ describe("renderColorTheme", () => {
 		expect(renderColorTheme({})).toBe("");
 	});
 
-	it("renders skinparam blocks for each stereotype", () => {
+	it("renders a D2 classes block for each stereotype", () => {
 		const colors = { component: "#4A90D9", store: "#E67E22" };
 		const result = renderColorTheme(colors);
-		expect(result).toContain("skinparam class<<component>>");
-		expect(result).toContain("BackgroundColor #4A90D9");
-		expect(result).toContain("skinparam class<<store>>");
-		expect(result).toContain("BackgroundColor #E67E22");
+		expect(result).toContain("classes: {");
+		expect(result).toContain(`component: { style: { fill: "#4A90D9"; font-color: "#f5f5fa" } }`);
+		expect(result).toContain(`store: { style: { fill: "#E67E22"; font-color: "#f5f5fa" } }`);
 	});
 
-	it("renders all default stereotype colors", () => {
+	it("renders all provided stereotype colors", () => {
 		const result = renderColorTheme({ component: "#4A90D9", page: "#27AE60" });
 		expect(result).toContain("component");
 		expect(result).toContain("page");
 	});
 
+	it("sanitizes hyphenated stereotype names to underscore", () => {
+		const result = renderColorTheme({ "error-page": "#FF0000" });
+		expect(result).toContain("error_page: {");
+		expect(result).not.toContain("error-page");
+	});
+
 	it("sanitizes stereotype with special characters", () => {
 		const result = renderColorTheme({ "my<<stereotype>>": "#FF0000" });
-		expect(result).toContain("my__stereotype__");
-		expect(result).toContain("skinparam class<<my__stereotype__>>");
-		expect(result).not.toContain("<<my<<");
+		expect(result).toContain("my__stereotype__: {");
 	});
 
 	it("sanitizes invalid color to fallback", () => {
-		const result = renderColorTheme({ component: "not-a-color" });
-		expect(result).toContain("BackgroundColor #666666");
+		const result = renderColorTheme({ component: "not-a-valid-color" });
+		expect(result).toContain(`fill: "#666666"`);
 	});
 
 	it("allows named colors", () => {
 		const result = renderColorTheme({ component: "red" });
-		expect(result).toContain("BackgroundColor red");
+		expect(result).toContain(`fill: "red"`);
 	});
 });
 
@@ -44,18 +47,15 @@ describe("renderColorLegend", () => {
 		expect(renderColorLegend({})).toBe("");
 	});
 
-	it("renders legend with color entries", () => {
+	it("renders a legend comment with stereotype=color pairs", () => {
 		const colors = { component: "#4A90D9" };
 		const result = renderColorLegend(colors);
-		expect(result).toContain("legend right");
-		expect(result).toContain("component");
-		expect(result).toContain("#4A90D9");
-		expect(result).toContain("endlegend");
+		expect(result).toContain("# legend:");
+		expect(result).toContain("component=#4A90D9");
 	});
 
 	it("sanitizes legend entries", () => {
 		const result = renderColorLegend({ "bad<<name>>": "invalid" });
-		expect(result).toContain("bad__name__");
-		expect(result).toContain("#666666");
+		expect(result).toContain("bad__name__=#666666");
 	});
 });

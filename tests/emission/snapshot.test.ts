@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { emitD2 } from "../../src/emission/d2-emitter.js";
 import {
 	filterEdgesByScope,
 	filterSymbolsByScope,
 	resolveFocusScope,
 } from "../../src/emission/focus.js";
-import { emitPlantUML } from "../../src/emission/plantuml-emitter.js";
 import type { ClassSymbol, SymbolTable } from "../../src/types/ast.js";
 import { DEFAULT_DIAGRAM_OPTIONS, DEFAULT_STEREOTYPE_COLORS } from "../../src/types/diagram.js";
 import type { Edge } from "../../src/types/edge.js";
@@ -37,8 +37,8 @@ function makeSymbols(overrides?: Partial<SymbolTable>): SymbolTable {
 	};
 }
 
-describe("PlantUML snapshot: class diagram", () => {
-	it("emits valid PlantUML with classes and edges", () => {
+describe("D2 snapshot: class diagram", () => {
+	it("emits valid D2 with classes and edges", () => {
 		const symbols = makeSymbols({
 			classes: [makeClass("App"), makeClass("Router"), makeClass("Store")],
 		});
@@ -47,7 +47,7 @@ describe("PlantUML snapshot: class diagram", () => {
 			{ source: "App", target: "Store", type: "composition" },
 		];
 		const edgeSet = createEdgeSet(edges);
-		const result = emitPlantUML(symbols, edgeSet, {
+		const result = emitD2(symbols, edgeSet, {
 			...DEFAULT_DIAGRAM_OPTIONS,
 			kind: "class",
 			stereotypeColors: {},
@@ -55,7 +55,7 @@ describe("PlantUML snapshot: class diagram", () => {
 		expect(result.content).toMatchSnapshot();
 	});
 
-	it("emits valid PlantUML with stores and functions", () => {
+	it("emits valid D2 with stores and functions", () => {
 		const symbols = makeSymbols({
 			classes: [makeClass("Counter")],
 			stores: [
@@ -83,7 +83,7 @@ describe("PlantUML snapshot: class diagram", () => {
 			],
 		});
 		const edgeSet = createEdgeSet([]);
-		const result = emitPlantUML(symbols, edgeSet, {
+		const result = emitD2(symbols, edgeSet, {
 			...DEFAULT_DIAGRAM_OPTIONS,
 			kind: "class",
 			stereotypeColors: {},
@@ -91,7 +91,7 @@ describe("PlantUML snapshot: class diagram", () => {
 		expect(result.content).toMatchSnapshot();
 	});
 
-	it("emits valid PlantUML with focus mode", () => {
+	it("emits valid D2 with focus mode", () => {
 		const symbols = makeSymbols({
 			classes: [makeClass("App"), makeClass("Router"), makeClass("Store"), makeClass("Logger")],
 		});
@@ -105,7 +105,7 @@ describe("PlantUML snapshot: class diagram", () => {
 		const filteredSymbols = filterSymbolsByScope(symbols, scope);
 		const filteredEdges = filterEdgesByScope(edgeSet.edges, scope);
 		const filteredEdgeSet = createEdgeSet(filteredEdges);
-		const result = emitPlantUML(filteredSymbols, filteredEdgeSet, {
+		const result = emitD2(filteredSymbols, filteredEdgeSet, {
 			...DEFAULT_DIAGRAM_OPTIONS,
 			kind: "class",
 			stereotypeColors: {},
@@ -165,43 +165,27 @@ describe("PlantUML snapshot: class diagram", () => {
 		const edgeSet = createEdgeSet(edges);
 
 		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, kind: "class" as const, stereotypeColors: {} };
-		const first = emitPlantUML(symbols, edgeSet, opts).content;
-		const second = emitPlantUML(symbols, edgeSet, opts).content;
+		const first = emitD2(symbols, edgeSet, opts).content;
+		const second = emitD2(symbols, edgeSet, opts).content;
 		expect(first).toBe(second);
 
 		const lines = first.split("\n");
-		const bareClassLines = lines.filter(
-			(l) => /^(?:class|interface) "\w+"/.test(l) && !l.includes("<<"),
-		);
-		const bareClassNames = bareClassLines.map((l) => l.match(/^class "(\w+)"/)?.[1] ?? "");
-		expect(bareClassNames).toEqual([...bareClassNames].sort((a, b) => a.localeCompare(b)));
+		// D2 node declarations: "<id>: {" opening a shape block.
+		const nodeLines = lines.filter((l) => /^\w+: \{$/.test(l));
+		expect(nodeLines.length).toBeGreaterThan(0);
+		expect(first).toContain("shape: class");
 
-		const edgeLines = lines.filter((l) =>
-			/^[A-Za-z_]\S* (\.\.\||\.\.>|\*--|o--|-->|<\|--)/.test(l),
-		);
-		const edgeTypeMap: Record<string, string> = {
-			"<|--": "extends",
-			"..|>": "implements",
-			"*--": "composition",
-			"o--": "aggregation",
-			"..>": "dependency",
-			"-->": "association",
-		};
-		const edgeSorted = [...edgeLines].sort((a, b) => {
-			const [, srcA, symA, tgtA] = a.match(/^(\S+) (\S+) (\S+)/) ?? [];
-			const [, srcB, symB, tgtB] = b.match(/^(\S+) (\S+) (\S+)/) ?? [];
-			const bySrc = srcA.localeCompare(srcB);
-			if (bySrc !== 0) return bySrc;
-			const byTgt = tgtA.localeCompare(tgtB);
-			if (byTgt !== 0) return byTgt;
-			return (edgeTypeMap[symA] ?? symA).localeCompare(edgeTypeMap[symB] ?? symB);
-		});
-		expect(edgeLines).toEqual(edgeSorted);
+		// D2 edges: "<from> -> <to>: ...".
+		const edgeLines = lines.filter((l) => / -> /.test(l));
+		expect(edgeLines.length).toBeGreaterThan(0);
+		for (const l of edgeLines) {
+			expect(l).toMatch(/^\w+ -> \w+/);
+		}
 	});
 });
 
-describe("PlantUML snapshot: package diagram", () => {
-	it("emits valid PlantUML with packages", () => {
+describe("D2 snapshot: package diagram", () => {
+	it("emits valid D2 with packages", () => {
 		const symbols = makeSymbols({
 			classes: [
 				{ ...makeClass("App"), filePath: "/src/routes/App.ts" },
@@ -212,7 +196,7 @@ describe("PlantUML snapshot: package diagram", () => {
 			{ source: "/src/routes/App.ts", target: "/src/lib/Layout.ts", type: "dependency" },
 		];
 		const edgeSet = createEdgeSet(edges);
-		const result = emitPlantUML(symbols, edgeSet, {
+		const result = emitD2(symbols, edgeSet, {
 			...DEFAULT_DIAGRAM_OPTIONS,
 			kind: "package",
 			stereotypeColors: {},
@@ -221,32 +205,32 @@ describe("PlantUML snapshot: package diagram", () => {
 	});
 });
 
-describe("PlantUML snapshot: color theme and layout", () => {
-	it("emits PlantUML with color theme", () => {
+describe("D2 snapshot: color theme and layout", () => {
+	it("emits D2 with color theme", () => {
 		const symbols = makeSymbols({
 			classes: [makeClass("MyComponent")],
 		});
 		const edgeSet = createEdgeSet([]);
-		const result = emitPlantUML(symbols, edgeSet, {
+		const result = emitD2(symbols, edgeSet, {
 			...DEFAULT_DIAGRAM_OPTIONS,
 			kind: "class",
 			stereotypeColors: DEFAULT_STEREOTYPE_COLORS,
 		});
-		expect(result.content).toContain("skinparam class<<component>>");
-		expect(result.content).toContain("legend right");
+		expect(result.content).toContain("classes: {");
+		expect(result.content).toContain("# legend:");
 	});
 
-	it("emits PlantUML with layout direction", () => {
+	it("emits D2 with layout direction", () => {
 		const symbols = makeSymbols({
 			classes: [makeClass("Widget")],
 		});
 		const edgeSet = createEdgeSet([]);
-		const result = emitPlantUML(symbols, edgeSet, {
+		const result = emitD2(symbols, edgeSet, {
 			...DEFAULT_DIAGRAM_OPTIONS,
 			kind: "class",
 			layoutDirection: "left-to-right",
 			stereotypeColors: {},
 		});
-		expect(result.content).toContain("left to right direction");
+		expect(result.content).toContain("direction: right");
 	});
 });

@@ -8,7 +8,7 @@ import { renderColorLegend, renderColorTheme } from "./color-theme.js";
 import { renderLayoutDirective } from "./layout-hints.js";
 import { renderPackageDiagram } from "./package-diagram.js";
 
-export function emitPlantUML(
+export function emitD2(
 	symbols: SymbolTable,
 	edges: EdgeSet,
 	options?: DiagramOptions,
@@ -20,19 +20,13 @@ export function emitPlantUML(
 			? renderPackageDiagram(symbols, edges, opts)
 			: renderClassDiagram(symbols, edges, opts);
 
-	const injected = injectThemeBlock(content, opts);
-
 	return {
-		content: injected,
+		content: injectThemeBlock(content, opts),
 		diagramKind: opts.kind,
 	};
 }
 
-function injectThemeBlock(puml: string, opts: DiagramOptions): string {
-	const lines = puml.split("\n");
-	const headerEndIdx = lines.findIndex((l) => l.startsWith("@startuml"));
-	if (headerEndIdx === -1) return puml;
-
+function injectThemeBlock(d2: string, opts: DiagramOptions): string {
 	const insertions: string[] = [];
 
 	const layout = renderLayoutDirective(opts.layoutDirection ?? "top-to-bottom");
@@ -44,12 +38,11 @@ function injectThemeBlock(puml: string, opts: DiagramOptions): string {
 	const legend = renderColorLegend(opts.stereotypeColors ?? {});
 	if (legend) insertions.push(legend);
 
-	if (insertions.length === 0) return puml;
+	if (insertions.length === 0) return d2;
 
-	const afterHeader = headerEndIdx + 1;
-	const blankLineIdx = lines.findIndex((l, i) => i > headerEndIdx && l.trim() === "");
-	const insertAt = blankLineIdx > headerEndIdx ? blankLineIdx + 1 : afterHeader;
-
-	lines.splice(insertAt, 0, ...insertions, "");
+	const lines = d2.split("\n");
+	// The rendered body opens with a `# <title>` comment; theme follows it.
+	const insertAt = lines[0]?.startsWith("#") ? 1 : 0;
+	lines.splice(insertAt, 0, ...insertions);
 	return lines.join("\n");
 }
