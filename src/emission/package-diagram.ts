@@ -2,7 +2,7 @@ import type { SymbolTable } from "../types/ast.js";
 import type { DiagramOptions } from "../types/diagram.js";
 import type { EdgeSet } from "../types/edge.js";
 import { normalizeFilePath } from "../utils/path.js";
-import { sanitizeStereotype } from "./color-theme.js";
+import { renderClassRef } from "./d2-utils.js";
 import { getGroupForFile } from "./groups.js";
 import { routeStereotype } from "./route-utils.js";
 
@@ -29,7 +29,8 @@ export function renderPackageDiagram(
 		lines.push(`${sanitizeId(pkg)}: {`);
 		lines.push(`  label: "${pkg}"`);
 		for (const member of sortedMembers) {
-			lines.push(`  "${member.name}": { class: ${renderClassRef(member.stereotypes)} }`);
+			const ref = renderClassRef(member.stereotypes);
+			lines.push(ref ? `  "${member.name}": { class: ${ref} }` : `  "${member.name}"`);
 		}
 		lines.push("}");
 	}
@@ -60,11 +61,6 @@ export function renderPackageDiagram(
 	return lines.join("\n");
 }
 
-function renderClassRef(stereotypes: string[]): string {
-	if (stereotypes.length === 1) return stereotypes[0] as string;
-	return `[${stereotypes.join("; ")}]`;
-}
-
 function buildPackages(
 	symbols: SymbolTable,
 	options: DiagramOptions,
@@ -82,7 +78,7 @@ function buildPackages(
 			packages.set(pkg, members);
 		}
 		if (members.has(name)) return;
-		members.set(name, { name, stereotypes: stereotypes.map(sanitizeStereotype) });
+		members.set(name, { name, stereotypes });
 	};
 
 	for (const cls of symbols.classes) {

@@ -34,6 +34,13 @@ export async function renderD2(
 		if (message.includes("ETIMEDOUT") || message.includes("timed out")) {
 			return { success: false, error: "d2 render timed out" };
 		}
+		if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+			return {
+				success: false,
+				error:
+					"d2 executable not found. Install d2 from https://d2lang.com and ensure it is on your PATH.",
+			};
+		}
 		return { success: false, error: `d2 render failed: ${message}` };
 	} finally {
 		rmSync(dir, { recursive: true, force: true });

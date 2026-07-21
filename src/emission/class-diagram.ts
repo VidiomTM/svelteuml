@@ -9,6 +9,7 @@ import type { DiagramOptions } from "../types/diagram.js";
 import type { EdgeSet, EdgeType } from "../types/edge.js";
 import { normalizeFilePath } from "../utils/path.js";
 import { sanitizeStereotype } from "./color-theme.js";
+import { renderClassRef } from "./d2-utils.js";
 import { routeStereotype } from "./route-utils.js";
 import { applyFocusFilter, filterHiddenComponents } from "./tag-processor.js";
 
@@ -392,9 +393,4 @@ function groupPropsByComponent(props: PropSymbol[]): Map<string, PropSymbol[]> {
 		list.push(prop);
 	}
 	return map;
-}
-
-function renderClassRef(stereotypes: string[]): string {
-	if (stereotypes.length === 1) return stereotypes[0] as string;
-	return `[${stereotypes.join("; ")}]`;
 }
