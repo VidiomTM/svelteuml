@@ -40,6 +40,10 @@ function injectThemeBlock(d2: string, opts: DiagramOptions): string {
 
 	if (opts.themeBackground) insertions.push(`style: { fill: "${opts.themeBackground}" }`);
 
+	if (opts.gridColumns && opts.gridColumns > 0) {
+		insertions.push(`grid-columns: ${opts.gridColumns}`);
+	}
+
 	const theme = renderColorTheme(opts.stereotypeColors ?? {});
 	if (theme) insertions.push(theme);
 

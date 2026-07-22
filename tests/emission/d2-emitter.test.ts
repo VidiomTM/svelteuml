@@ -104,6 +104,14 @@ describe("emitD2", () => {
 		expect(result.content).toContain("direction: right");
 	});
 
+	it("emits grid-columns when gridColumns is set", () => {
+		const result = emitD2(makeEmptySymbolTable(), createEdgeSet([]), {
+			...DEFAULT_DIAGRAM_OPTIONS,
+			gridColumns: 6,
+		});
+		expect(result.content).toContain("grid-columns: 6");
+	});
+
 	it("injects theme background and edge-stroke glob when a theme is active", () => {
 		const edges = createEdgeSet([
 			{ source: "/src/routes/a.ts", target: "/src/lib/b.ts", type: "dependency" },

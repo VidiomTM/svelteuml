@@ -240,6 +240,7 @@ export async function runPipeline(
 				: (theme?.stereotypeColors ?? DEFAULT_STEREOTYPE_COLORS),
 			targetDir: config.targetDir,
 			collapseMembers: cliOpts.collapseMembers,
+			...(cliOpts.gridColumns ? { gridColumns: cliOpts.gridColumns } : {}),
 			...(theme ? { themeBackground: theme.background, themeEdgeStroke: theme.edgeStroke } : {}),
 			...(config.groups.length > 0 ? { groups: config.groups } : {}),
 		};
