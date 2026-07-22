@@ -1,3 +1,6 @@
+import { dirname, join } from "node:path";
+import { namingStereotype } from "../extraction/naming-stereotype.js";
+import { type ReadmeAnnotation, readReadmeAnnotation } from "../extraction/readme-annotations.js";
 import type { SymbolTable } from "../types/ast.js";
 import type { DiagramOptions } from "../types/diagram.js";
 import type { EdgeSet } from "../types/edge.js";
@@ -11,6 +14,12 @@ interface PackageMember {
 	stereotypes: string[];
 }
 
+interface BuiltPackages {
+	packages: Map<string, Map<string, PackageMember>>;
+	/** Representative on-disk directory per package (first member's dir). */
+	dirs: Map<string, string>;
+}
+
 export function renderPackageDiagram(
 	symbols: SymbolTable,
 	edgeSet: EdgeSet,
@@ -20,14 +29,22 @@ export function renderPackageDiagram(
 	const title = options.title ?? "Package Diagram";
 	lines.push(`# ${title}`);
 
-	const packages = buildPackages(symbols, options);
+	const { packages, dirs } = buildPackages(symbols, options);
+	const annotations = resolveAnnotations(dirs, options);
+	const hidden = new Set([...annotations.entries()].filter(([, a]) => a.hide).map(([pkg]) => pkg));
 
-	const sortedPackageKeys = [...packages.keys()].sort((a, b) => a.localeCompare(b));
+	const sortedPackageKeys = [...packages.keys()]
+		.filter((pkg) => !hidden.has(pkg))
+		.sort((a, b) => a.localeCompare(b));
 	for (const pkg of sortedPackageKeys) {
 		const members = packages.get(pkg) ?? new Map<string, PackageMember>();
+		const annotation = annotations.get(pkg);
 		const sortedMembers = [...members.values()].sort((a, b) => a.name.localeCompare(b.name));
 		lines.push(`${sanitizeId(pkg)}: {`);
-		lines.push(`  label: "${d2str(pkg)}"`);
+		lines.push(`  label: "${d2str(annotation?.title ?? pkg)}"`);
+		if (annotation?.description) {
+			lines.push(`  tooltip: "${d2str(annotation.description)}"`);
+		}
 		if (!options.collapseMembers) {
 			for (const member of sortedMembers) {
 				const ref = renderClassRef(member.stereotypes);
@@ -47,6 +64,7 @@ export function renderPackageDiagram(
 		const sourcePkg = getGroupForFile(normalizedSource, groups) ?? extractPackage(normalizedSource);
 		const targetPkg = getGroupForFile(normalizedTarget, groups) ?? extractPackage(normalizedTarget);
 		if (!(sourcePkg && targetPkg) || sourcePkg === targetPkg) continue;
+		if (hidden.has(sourcePkg) || hidden.has(targetPkg)) continue;
 		const key = `${sourcePkg}|${targetPkg}`;
 		const existing = edgeWeights.get(key);
 		if (existing) {
@@ -65,11 +83,9 @@ export function renderPackageDiagram(
 	return lines.join("\n");
 }
 
-function buildPackages(
-	symbols: SymbolTable,
-	options: DiagramOptions,
-): Map<string, Map<string, PackageMember>> {
+function buildPackages(symbols: SymbolTable, options: DiagramOptions): BuiltPackages {
 	const packages = new Map<string, Map<string, PackageMember>>();
+	const dirs = new Map<string, string>();
 	const groups = options.groups ?? [];
 
 	const addEntry = (filePath: string, name: string, stereotypes: string[]) => {
@@ -81,8 +97,11 @@ function buildPackages(
 			members = new Map<string, PackageMember>();
 			packages.set(pkg, members);
 		}
+		if (!dirs.has(pkg)) dirs.set(pkg, dirname(filePath));
 		if (members.has(name)) return;
-		members.set(name, { name, stereotypes });
+		const naming = namingStereotype(filePath);
+		const full = naming ? [naming, ...stereotypes] : stereotypes;
+		members.set(name, { name, stereotypes: full });
 	};
 
 	for (const cls of symbols.classes) {
@@ -119,7 +138,23 @@ function buildPackages(
 		addEntry(route.filePath, route.name, [routeStereotype(route)]);
 	}
 
-	return packages;
+	return { packages, dirs };
+}
+
+// Read each package's README from its representative member directory, falling
+// back to targetDir/src/<pkg> so single-segment packages still resolve.
+function resolveAnnotations(
+	dirs: Map<string, string>,
+	options: DiagramOptions,
+): Map<string, ReadmeAnnotation> {
+	const result = new Map<string, ReadmeAnnotation>();
+	if (!(options.readmeAnnotations && options.targetDir)) return result;
+	for (const [pkg, memberDir] of dirs) {
+		const annotation =
+			readReadmeAnnotation(memberDir) ?? readReadmeAnnotation(join(options.targetDir, "src", pkg));
+		if (annotation) result.set(pkg, annotation);
+	}
+	return result;
 }
 
 function extractPackage(filePath: string): string | undefined {

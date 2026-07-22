@@ -1,0 +1,32 @@
+# Package Diagram
+direction: down
+style: { fill: "#1a1a2e" }
+classes: {
+  abstract_class: { style: { fill: "#6272a4"; font-color: "#f5f5fa" } }
+  component: { style: { fill: "#8be9fd"; font-color: "#1a1a2e" } }
+  derived: { style: { fill: "#ff79c6"; font-color: "#1a1a2e" } }
+  endpoint: { style: { fill: "#ff79c6"; font-color: "#1a1a2e" } }
+  error_page: { style: { fill: "#ff79c6"; font-color: "#1a1a2e" } }
+  Exported: { style: { fill: "#8be9fd"; font-color: "#1a1a2e" } }
+  function: { style: { fill: "#6272a4"; font-color: "#f5f5fa" } }
+  guard: { style: { fill: "#ff79c6"; font-color: "#1a1a2e" } }
+  interface: { style: { fill: "#6272a4"; font-color: "#f5f5fa" } }
+  layout: { style: { fill: "#8be9fd"; font-color: "#1a1a2e" } }
+  LayoutLoad: { style: { fill: "#8be9fd"; font-color: "#1a1a2e" } }
+  package: { style: { fill: "#8be9fd"; font-color: "#1a1a2e" } }
+  page: { style: { fill: "#8be9fd"; font-color: "#1a1a2e" } }
+  PageLoad: { style: { fill: "#8be9fd"; font-color: "#1a1a2e" } }
+  repository: { style: { fill: "#6272a4"; font-color: "#f5f5fa" } }
+  service: { style: { fill: "#8be9fd"; font-color: "#1a1a2e" } }
+  state: { style: { fill: "#ff79c6"; font-color: "#1a1a2e" } }
+  store: { style: { fill: "#ff79c6"; font-color: "#1a1a2e" } }
+}
+# legend: abstract_class=#6272a4, component=#8be9fd, derived=#ff79c6, endpoint=#ff79c6, error_page=#ff79c6, Exported=#8be9fd, function=#6272a4, guard=#ff79c6, interface=#6272a4, layout=#8be9fd, LayoutLoad=#8be9fd, package=#8be9fd, page=#8be9fd, PageLoad=#8be9fd, repository=#6272a4, service=#8be9fd, state=#ff79c6, store=#ff79c6
+routes: {
+  label: "routes"
+  "+layout": { class: component }
+  "+page": { class: component }
+  "Counter": { class: component }
+  "Header": { class: component }
+}
+(* -> *)[*].style.stroke: "#6272a4"

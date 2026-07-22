@@ -34,6 +34,8 @@ export interface DiagramOptions {
 	themeEdgeStroke?: string;
 	/** Pack top-level nodes into an N-column D2 grid (compact flat layouts). */
 	gridColumns?: number;
+	/** Read per-package README.md `@uml.*` tags to enrich package nodes. */
+	readmeAnnotations?: boolean;
 }
 
 export const DEFAULT_STEREOTYPE_COLORS: StereotypeColors = {
@@ -48,6 +50,9 @@ export const DEFAULT_STEREOTYPE_COLORS: StereotypeColors = {
 	endpoint: "#E74C3C",
 	"error-page": "#C0392B",
 	function: "#3498DB",
+	repository: "#16A085",
+	service: "#2980B9",
+	guard: "#D35400",
 	Exported: "#95A5A6",
 };
 
