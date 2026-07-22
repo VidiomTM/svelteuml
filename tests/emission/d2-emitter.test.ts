@@ -103,4 +103,18 @@ describe("emitD2", () => {
 		});
 		expect(result.content).toContain("direction: right");
 	});
+
+	it("injects theme background and edge-stroke glob when a theme is active", () => {
+		const edges = createEdgeSet([
+			{ source: "/src/routes/a.ts", target: "/src/lib/b.ts", type: "dependency" },
+		]);
+		const result = emitD2(makeEmptySymbolTable(), edges, {
+			...DEFAULT_DIAGRAM_OPTIONS,
+			kind: "package",
+			themeBackground: "#1a1a2e",
+			themeEdgeStroke: "#6272a4",
+		});
+		expect(result.content).toContain(`style: { fill: "#1a1a2e" }`);
+		expect(result.content).toContain(`(* -> *)[*].style.stroke: "#6272a4"`);
+	});
 });

@@ -28,6 +28,10 @@ export interface DiagramOptions {
 	groups?: GroupConfig[];
 	/** Package diagram only: render package nodes without their members. */
 	collapseMembers?: boolean;
+	/** Canvas background fill from the active theme (D2 root style). */
+	themeBackground?: string;
+	/** Muted edge stroke from the active theme, applied via a D2 edge glob. */
+	themeEdgeStroke?: string;
 }
 
 export const DEFAULT_STEREOTYPE_COLORS: StereotypeColors = {

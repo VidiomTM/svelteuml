@@ -20,8 +20,14 @@ export function emitD2(
 			? renderPackageDiagram(symbols, edges, opts)
 			: renderClassDiagram(symbols, edges, opts);
 
+	let themed = injectThemeBlock(content, opts);
+	if (opts.themeEdgeStroke) {
+		// Glob applies the muted stroke to every edge; must follow the edges.
+		themed += `\n(* -> *)[*].style.stroke: "${opts.themeEdgeStroke}"`;
+	}
+
 	return {
-		content: injectThemeBlock(content, opts),
+		content: themed,
 		diagramKind: opts.kind,
 	};
 }
@@ -31,6 +37,8 @@ function injectThemeBlock(d2: string, opts: DiagramOptions): string {
 
 	const layout = renderLayoutDirective(opts.layoutDirection ?? "top-to-bottom");
 	if (layout) insertions.push(layout);
+
+	if (opts.themeBackground) insertions.push(`style: { fill: "${opts.themeBackground}" }`);
 
 	const theme = renderColorTheme(opts.stereotypeColors ?? {});
 	if (theme) insertions.push(theme);
