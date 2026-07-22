@@ -515,4 +515,20 @@ describe("renderPackageDiagram", () => {
 		expect(result).toContain(`label: "lib"`);
 		expect(result).toContain(`label: "routes"`);
 	});
+
+	it("collapseMembers renders package nodes only, no members, edges kept", () => {
+		const symbols = makeEmptySymbolTable({
+			functions: [fn("helper", "/src/lib/a.ts"), fn("route", "/src/routes/b.ts")],
+		});
+		const edges = createEdgeSet([
+			{ source: "/src/routes/b.ts", target: "/src/lib/a.ts", type: "dependency" },
+		]);
+		const opts = { ...DEFAULT_DIAGRAM_OPTIONS, collapseMembers: true };
+		const result = renderPackageDiagram(symbols, edges, opts);
+		expect(result).toContain(`label: "lib"`);
+		expect(result).toContain(`label: "routes"`);
+		expect(result).not.toContain(`"helper"`);
+		expect(result).not.toContain(`"route"`);
+		expect(result).toContain("routes -> lib");
+	});
 });

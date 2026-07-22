@@ -235,6 +235,7 @@ export async function runPipeline(
 			layoutDirection: cliOpts.layoutDirection,
 			stereotypeColors: cliOpts.noColor ? {} : DEFAULT_STEREOTYPE_COLORS,
 			targetDir: config.targetDir,
+			collapseMembers: cliOpts.collapseMembers,
 			...(config.groups.length > 0 ? { groups: config.groups } : {}),
 		};
 

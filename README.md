@@ -44,6 +44,7 @@ svelteuml generate ./my-sveltekit-app -f svg -o diagram.svg
 | `-d, --diagram <kind>` | Diagram kind: `class`, `package` | `class` |
 | `--class-diagram` | Generate a class diagram (default) | `false` |
 | `--package-diagram` | Generate a package diagram | `false` |
+| `--collapse-members` | Package diagram: show packages only, hide members | `false` |
 | `-e, --exclude [glob...]` | Glob patterns to exclude from discovery | `[]` |
 | `--exclude-patterns [glob...]` | Glob patterns to exclude from output diagram | `[]` |
 | `--exclude-externals` | Exclude external dependencies (node_modules) | `false` |

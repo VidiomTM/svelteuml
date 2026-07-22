@@ -26,6 +26,8 @@ export interface DiagramOptions {
 	targetDir?: string;
 	/** Group definitions for organizing symbols by file path pattern. */
 	groups?: GroupConfig[];
+	/** Package diagram only: render package nodes without their members. */
+	collapseMembers?: boolean;
 }
 
 export const DEFAULT_STEREOTYPE_COLORS: StereotypeColors = {

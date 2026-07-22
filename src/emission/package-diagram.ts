@@ -28,9 +28,11 @@ export function renderPackageDiagram(
 		const sortedMembers = [...members.values()].sort((a, b) => a.name.localeCompare(b.name));
 		lines.push(`${sanitizeId(pkg)}: {`);
 		lines.push(`  label: "${pkg}"`);
-		for (const member of sortedMembers) {
-			const ref = renderClassRef(member.stereotypes);
-			lines.push(ref ? `  "${member.name}": { class: ${ref} }` : `  "${member.name}"`);
+		if (!options.collapseMembers) {
+			for (const member of sortedMembers) {
+				const ref = renderClassRef(member.stereotypes);
+				lines.push(ref ? `  "${member.name}": { class: ${ref} }` : `  "${member.name}"`);
+			}
 		}
 		lines.push("}");
 	}

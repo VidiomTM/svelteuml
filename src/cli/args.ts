@@ -26,6 +26,7 @@ export interface CliOptions {
 	layoutDirection: LayoutDirection;
 	noColor: boolean;
 	aliasGroups: string[];
+	collapseMembers: boolean;
 }
 
 const VALID_FORMATS: readonly OutputFormat[] = ["d2", "svg", "png"];
@@ -96,6 +97,7 @@ function addSharedOptions(cmd: Command): Command {
 		.option("--layout-direction <dir>", "layout direction", parseLayoutDirection, "top-to-bottom")
 		.option("--class-diagram", "generate a class diagram (default)", false)
 		.option("--package-diagram", "generate a package diagram", false)
+		.option("--collapse-members", "package diagram: show packages only, hide members", false)
 		.option(
 			"--alias-group <value>",
 			"group symbols matching glob pattern into a named package (repeatable, format: PATTERN:NAME)",
@@ -143,6 +145,7 @@ function toCliOptions(
 		layoutDirection: opts.layoutDirection as LayoutDirection,
 		noColor: opts.disableColors as boolean,
 		aliasGroups: (opts.aliasGroup as string[] | undefined) ?? [],
+		collapseMembers: opts.collapseMembers as boolean,
 		watch: true,
 		quiet: opts.quiet as boolean,
 		verbose: opts.verbose as boolean,
