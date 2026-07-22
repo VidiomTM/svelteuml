@@ -28,6 +28,7 @@ export interface CliOptions {
 	aliasGroups: string[];
 	collapseMembers: boolean;
 	theme: string | undefined;
+	gridColumns: number | undefined;
 }
 
 const VALID_FORMATS: readonly OutputFormat[] = ["d2", "svg", "png"];
@@ -82,6 +83,14 @@ function parseMaxDepth(value: string): number {
 	return n;
 }
 
+function parseGridColumns(value: string): number {
+	const n = Number.parseInt(value, 10);
+	if (Number.isNaN(n) || n < 1) {
+		throw new Error(`--grid-columns must be a positive integer, got: "${value}"`);
+	}
+	return n;
+}
+
 function addSharedOptions(cmd: Command): Command {
 	return cmd
 		.option("-o, --output <path>", "output file path")
@@ -100,6 +109,7 @@ function addSharedOptions(cmd: Command): Command {
 		.option("--package-diagram", "generate a package diagram", false)
 		.option("--collapse-members", "package diagram: show packages only, hide members", false)
 		.option("--theme <name>", "built-in color theme (e.g. signature)")
+		.option("--grid-columns <n>", "pack nodes into an n-column grid", parseGridColumns)
 		.option(
 			"--alias-group <value>",
 			"group symbols matching glob pattern into a named package (repeatable, format: PATTERN:NAME)",
@@ -149,6 +159,7 @@ function toCliOptions(
 		aliasGroups: (opts.aliasGroup as string[] | undefined) ?? [],
 		collapseMembers: opts.collapseMembers as boolean,
 		theme: opts.theme as string | undefined,
+		gridColumns: opts.gridColumns as number | undefined,
 		watch: true,
 		quiet: opts.quiet as boolean,
 		verbose: opts.verbose as boolean,

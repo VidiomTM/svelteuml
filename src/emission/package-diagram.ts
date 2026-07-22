@@ -2,7 +2,7 @@ import type { SymbolTable } from "../types/ast.js";
 import type { DiagramOptions } from "../types/diagram.js";
 import type { EdgeSet } from "../types/edge.js";
 import { normalizeFilePath } from "../utils/path.js";
-import { renderClassRef } from "./d2-utils.js";
+import { d2str, renderClassRef } from "./d2-utils.js";
 import { getGroupForFile } from "./groups.js";
 import { routeStereotype } from "./route-utils.js";
 
@@ -27,11 +27,13 @@ export function renderPackageDiagram(
 		const members = packages.get(pkg) ?? new Map<string, PackageMember>();
 		const sortedMembers = [...members.values()].sort((a, b) => a.name.localeCompare(b.name));
 		lines.push(`${sanitizeId(pkg)}: {`);
-		lines.push(`  label: "${pkg}"`);
+		lines.push(`  label: "${d2str(pkg)}"`);
 		if (!options.collapseMembers) {
 			for (const member of sortedMembers) {
 				const ref = renderClassRef(member.stereotypes);
-				lines.push(ref ? `  "${member.name}": { class: ${ref} }` : `  "${member.name}"`);
+				lines.push(
+					ref ? `  "${d2str(member.name)}": { class: ${ref} }` : `  "${d2str(member.name)}"`,
+				);
 			}
 		}
 		lines.push("}");

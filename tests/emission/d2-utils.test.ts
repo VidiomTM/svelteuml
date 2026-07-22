@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { renderClassRef } from "../../src/emission/d2-utils.js";
+import { d2str, renderClassRef } from "../../src/emission/d2-utils.js";
+
+describe("d2str", () => {
+	it("escapes double quotes so union-literal types do not break D2", () => {
+		expect(d2str('"server" | "client"')).toBe('\\"server\\" | \\"client\\"');
+	});
+	it("escapes backslashes", () => {
+		expect(d2str("a\\b")).toBe("a\\\\b");
+	});
+});
 
 describe("renderClassRef", () => {
 	it("returns empty string for no stereotypes (never emits undefined)", () => {

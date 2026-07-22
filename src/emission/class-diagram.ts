@@ -9,7 +9,7 @@ import type { DiagramOptions } from "../types/diagram.js";
 import type { EdgeSet, EdgeType } from "../types/edge.js";
 import { normalizeFilePath } from "../utils/path.js";
 import { sanitizeStereotype } from "./color-theme.js";
-import { renderClassRef } from "./d2-utils.js";
+import { d2str, renderClassRef } from "./d2-utils.js";
 import { routeStereotype } from "./route-utils.js";
 import { applyFocusFilter, filterHiddenComponents } from "./tag-processor.js";
 
@@ -71,7 +71,7 @@ function renderGroupedSymbols(lines: string[], symbols: SymbolTable, ctx: Render
 
 	for (const [groupName, groupSymbols] of groups) {
 		lines.push(`${sanitizeId(groupName)}: {`);
-		lines.push(`  label: "${groupName}"`);
+		lines.push(`  label: "${d2str(groupName)}"`);
 		const groupCtx: RenderContext = { ...ctx, prefix: `${sanitizeId(groupName)}.` };
 		renderSymbolsBlock(lines, groupSymbols, groupCtx, "  ");
 		lines.push("}");
@@ -124,7 +124,7 @@ function renderSymbolsBlock(
 		const stereotypes = fn.isExported ? ["function", "Exported"] : ["function"];
 		lines.push(`${indent}${local}: {`);
 		lines.push(`${indent}  shape: class`);
-		lines.push(`${indent}  label: "${fn.name}"`);
+		lines.push(`${indent}  label: "${d2str(fn.name)}"`);
 		lines.push(`${indent}  class: ${renderClassRef(stereotypes)}`);
 		lines.push(`${indent}}`);
 	}
@@ -231,7 +231,7 @@ function renderClass(lines: string[], cls: ClassSymbol, ctx: RenderContext, inde
 	const local = registerNode(ctx, cls.name, cls.filePath);
 	lines.push(`${indent}${local}: {`);
 	lines.push(`${indent}  shape: class`);
-	lines.push(`${indent}  label: "${cls.name}"`);
+	lines.push(`${indent}  label: "${d2str(cls.name)}"`);
 	const stereotypes = classStereotypes(cls);
 	if (stereotypes.length > 0) lines.push(`${indent}  class: ${renderClassRef(stereotypes)}`);
 	if (ctx.options.showMembers) {
@@ -239,11 +239,11 @@ function renderClass(lines: string[], cls: ClassSymbol, ctx: RenderContext, inde
 			if (member.kind === "method" && !ctx.options.showMethods) continue;
 			const vis = mapVisibility(member.visibility, ctx.options.showVisibility);
 			if (member.kind === "property") {
-				lines.push(`${indent}  "${vis}${member.name}": "${member.type}"`);
+				lines.push(`${indent}  "${d2str(`${vis}${member.name}`)}": "${d2str(member.type)}"`);
 			} else {
 				const params = member.parameters?.map((p) => `${p.name}: ${p.type}`).join(", ") ?? "";
 				const ret = member.returnType ?? member.type;
-				lines.push(`${indent}  "${vis}${member.name}(${params})": "${ret}"`);
+				lines.push(`${indent}  "${d2str(`${vis}${member.name}(${params})`)}": "${d2str(ret)}"`);
 			}
 		}
 	}
@@ -262,10 +262,10 @@ function renderStore(
 	const stereotypes = store.isExported ? [stereotype, "Exported"] : [stereotype];
 	lines.push(`${indent}${local}: {`);
 	lines.push(`${indent}  shape: class`);
-	lines.push(`${indent}  label: "${store.name}"`);
+	lines.push(`${indent}  label: "${d2str(store.name)}"`);
 	lines.push(`${indent}  class: ${renderClassRef(stereotypes)}`);
-	lines.push(`${indent}  "storeType": "${store.storeType}"`);
-	lines.push(`${indent}  "valueType": "${store.valueType}"`);
+	lines.push(`${indent}  "storeType": "${d2str(store.storeType)}"`);
+	lines.push(`${indent}  "valueType": "${d2str(store.valueType)}"`);
 	lines.push(`${indent}}`);
 }
 
@@ -280,12 +280,12 @@ function renderComponent(
 	const local = registerNode(ctx, name, filePath);
 	lines.push(`${indent}${local}: {`);
 	lines.push(`${indent}  shape: class`);
-	lines.push(`${indent}  label: "${name}"`);
+	lines.push(`${indent}  label: "${d2str(name)}"`);
 	lines.push(`${indent}  class: [component]`);
 	if (ctx.options.showMembers) {
 		for (const prop of props) {
 			const suffix = prop.isRequired ? "" : "?";
-			lines.push(`${indent}  "+ ${prop.name}${suffix}": "${prop.type}"`);
+			lines.push(`${indent}  "${d2str(`+ ${prop.name}${suffix}`)}": "${d2str(prop.type)}"`);
 		}
 	}
 	lines.push(`${indent}}`);
@@ -301,12 +301,12 @@ function renderRoute(
 	const stereotype = sanitizeStereotype(routeStereotype(route));
 	lines.push(`${indent}${local}: {`);
 	lines.push(`${indent}  shape: class`);
-	lines.push(`${indent}  label: "${route.name}"`);
+	lines.push(`${indent}  label: "${d2str(route.name)}"`);
 	lines.push(`${indent}  class: ${renderClassRef([stereotype])}`);
-	lines.push(`${indent}  "path": "${route.routeSegment.raw}"`);
+	lines.push(`${indent}  "path": "${d2str(route.routeSegment.raw)}"`);
 	for (const param of route.routeSegment.params) {
 		const matcherSuffix = param.matcher ? `=${param.matcher}` : "";
-		lines.push(`${indent}  "${param.kind} ${param.name}${matcherSuffix}": ""`);
+		lines.push(`${indent}  "${d2str(`${param.kind} ${param.name}${matcherSuffix}`)}": ""`);
 	}
 	for (const group of route.routeSegment.groups) {
 		lines.push(`${indent}  "group: ${group}": ""`);
@@ -332,7 +332,7 @@ function renderEdge(
 	const normalizedTo = normalizeFilePath(to, targetDir);
 	const fromId = nodeIds.get(normalizedFrom) ?? sanitizeId(normalizedFrom);
 	const toId = nodeIds.get(normalizedTo) ?? sanitizeId(normalizedTo);
-	const labelPart = label ? `: "${label}"` : "";
+	const labelPart = label ? `: "${d2str(label)}"` : "";
 	lines.push(`${fromId} -> ${toId}${labelPart} { style.stroke-dash: ${style.dash} }`);
 }
 

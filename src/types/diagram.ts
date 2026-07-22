@@ -32,6 +32,8 @@ export interface DiagramOptions {
 	themeBackground?: string;
 	/** Muted edge stroke from the active theme, applied via a D2 edge glob. */
 	themeEdgeStroke?: string;
+	/** Pack top-level nodes into an N-column D2 grid (compact flat layouts). */
+	gridColumns?: number;
 }
 
 export const DEFAULT_STEREOTYPE_COLORS: StereotypeColors = {
