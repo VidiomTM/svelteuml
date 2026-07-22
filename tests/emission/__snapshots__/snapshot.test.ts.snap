@@ -64,10 +64,12 @@ exports[`D2 snapshot: package diagram > emits valid D2 with packages 1`] = `
 direction: down
 lib: {
   label: "lib"
+  class: package
   "Layout": { class: class }
 }
 routes: {
   label: "routes"
+  class: package
   "App": { class: class }
 }
 routes -> lib: "1" { style.stroke-dash: 3 }"

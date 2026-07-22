@@ -63,7 +63,7 @@ describe("emitD2", () => {
 			stereotypeColors: { component: "#FF0000" },
 		});
 		expect(result.content).toContain("classes: {");
-		expect(result.content).toContain(`component: { style: { fill: "#FF0000"`);
+		expect(result.content).toContain(`component: { style: { fill: "#24243e"; stroke: "#FF0000";`);
 	});
 
 	it("omits theme block when stereotypeColors is empty", () => {

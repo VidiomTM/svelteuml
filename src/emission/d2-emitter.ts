@@ -40,6 +40,13 @@ function injectThemeBlock(d2: string, opts: DiagramOptions): string {
 
 	if (opts.themeBackground) insertions.push(`style: { fill: "${opts.themeBackground}" }`);
 
+	// Global node defaults so containers/packages without a stereotype class
+	// still read as rounded surface cards (matches the per-stereotype classes).
+	if (opts.themeBackground) {
+		insertions.push("**.style.border-radius: 10");
+		insertions.push("**.style.font-size: 15");
+	}
+
 	if (opts.gridColumns && opts.gridColumns > 0) {
 		insertions.push(`grid-columns: ${opts.gridColumns}`);
 	}
