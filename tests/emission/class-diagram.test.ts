@@ -29,6 +29,25 @@ describe("renderClassDiagram", () => {
 		expect(result).not.toContain("@startuml");
 	});
 
+	it("prepends the repository stereotype for a *.repo.ts function", () => {
+		const symbols = makeEmptySymbolTable({
+			functions: [
+				{
+					kind: "function",
+					name: "findVideo",
+					filePath: "/src/lib/video.repo.ts",
+					isExported: true,
+					isAsync: false,
+					parameters: [],
+					returnType: "void",
+					typeParams: [],
+				},
+			],
+		});
+		const result = renderClassDiagram(symbols, createEdgeSet([]), DEFAULT_DIAGRAM_OPTIONS);
+		expect(result).toContain("class: [repository; function; Exported]");
+	});
+
 	it("renders a class with members as a shape class block", () => {
 		const symbols = makeEmptySymbolTable({
 			classes: [

@@ -1,3 +1,4 @@
+import { namingStereotype } from "../extraction/naming-stereotype.js";
 import type {
 	ClassSymbol,
 	PropSymbol,
@@ -121,7 +122,8 @@ function renderSymbolsBlock(
 		if (ctx.declared.has(fn.name)) continue;
 		ctx.declared.add(fn.name);
 		const local = registerNode(ctx, fn.name, fn.filePath);
-		const stereotypes = fn.isExported ? ["function", "Exported"] : ["function"];
+		const base = fn.isExported ? ["function", "Exported"] : ["function"];
+		const stereotypes = withNaming(fn.filePath, base);
 		lines.push(`${indent}${local}: {`);
 		lines.push(`${indent}  shape: class`);
 		lines.push(`${indent}  label: "${d2str(fn.name)}"`);
@@ -134,6 +136,13 @@ function renderSymbolsBlock(
 		ctx.declared.add(route.name);
 		renderRoute(lines, route, ctx, indent);
 	}
+}
+
+// Prepend a naming-pattern stereotype (e.g. repository) when the file name
+// suffix implies one, so the D2 class list can theme it.
+function withNaming(filePath: string, stereotypes: string[]): string[] {
+	const naming = namingStereotype(filePath);
+	return naming ? [naming, ...stereotypes] : stereotypes;
 }
 
 function hasGroup(sym: { group?: string }): boolean {
@@ -232,7 +241,7 @@ function renderClass(lines: string[], cls: ClassSymbol, ctx: RenderContext, inde
 	lines.push(`${indent}${local}: {`);
 	lines.push(`${indent}  shape: class`);
 	lines.push(`${indent}  label: "${d2str(cls.name)}"`);
-	const stereotypes = classStereotypes(cls);
+	const stereotypes = withNaming(cls.filePath, classStereotypes(cls));
 	if (stereotypes.length > 0) lines.push(`${indent}  class: ${renderClassRef(stereotypes)}`);
 	if (ctx.options.showMembers) {
 		for (const member of cls.members) {
@@ -259,7 +268,8 @@ function renderStore(
 	const local = registerNode(ctx, store.name, store.filePath);
 	const stereotype =
 		store.runeKind === "state" ? "state" : store.runeKind === "derived" ? "derived" : "store";
-	const stereotypes = store.isExported ? [stereotype, "Exported"] : [stereotype];
+	const base = store.isExported ? [stereotype, "Exported"] : [stereotype];
+	const stereotypes = withNaming(store.filePath, base);
 	lines.push(`${indent}${local}: {`);
 	lines.push(`${indent}  shape: class`);
 	lines.push(`${indent}  label: "${d2str(store.name)}"`);

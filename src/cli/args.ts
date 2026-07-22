@@ -29,6 +29,7 @@ export interface CliOptions {
 	collapseMembers: boolean;
 	theme: string | undefined;
 	gridColumns: number | undefined;
+	readmeAnnotations: boolean;
 }
 
 const VALID_FORMATS: readonly OutputFormat[] = ["d2", "svg", "png"];
@@ -110,6 +111,7 @@ function addSharedOptions(cmd: Command): Command {
 		.option("--collapse-members", "package diagram: show packages only, hide members", false)
 		.option("--theme <name>", "built-in color theme (e.g. signature)")
 		.option("--grid-columns <n>", "pack nodes into an n-column grid", parseGridColumns)
+		.option("--readme-annotations", "package diagram: read per-folder README.md @uml.* tags", false)
 		.option(
 			"--alias-group <value>",
 			"group symbols matching glob pattern into a named package (repeatable, format: PATTERN:NAME)",
@@ -160,6 +162,7 @@ function toCliOptions(
 		collapseMembers: opts.collapseMembers as boolean,
 		theme: opts.theme as string | undefined,
 		gridColumns: opts.gridColumns as number | undefined,
+		readmeAnnotations: opts.readmeAnnotations as boolean,
 		watch: true,
 		quiet: opts.quiet as boolean,
 		verbose: opts.verbose as boolean,

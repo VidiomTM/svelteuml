@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-green)](https://nodejs.org/)
 
-Static analysis tool that generates PlantUML architecture diagrams from SvelteKit codebases. Uses `svelte2tsx` + `ts-morph` to parse components, stores, routes, props, events, and server endpoints — producing class diagrams, package diagrams, or SVG/PNG output. No runtime required; analyzes source directly.
+Static analysis tool that generates [D2](https://d2lang.com) architecture diagrams from SvelteKit codebases. Uses `svelte2tsx` + `ts-morph` to parse components, stores, routes, props, events, and server endpoints, producing class diagrams, package diagrams, or SVG/PNG output. No runtime required; analyzes source directly.
 
 ## Quick Start
 
@@ -20,9 +20,9 @@ pnpm dlx svelteuml generate ./my-sveltekit-app
 svelteuml generate ./my-sveltekit-app
 
 # Generate to a specific file
-svelteuml generate ./my-sveltekit-app -o docs/architecture.puml
+svelteuml generate ./my-sveltekit-app -o docs/architecture.d2
 
-# Generate SVG (via PlantUML server)
+# Generate SVG (requires the d2 CLI on PATH)
 svelteuml generate ./my-sveltekit-app -f svg -o diagram.svg
 ```
 
@@ -32,19 +32,20 @@ svelteuml generate ./my-sveltekit-app -f svg -o diagram.svg
 
 | Subcommand | Description |
 |------------|-------------|
-| `generate` | Generate a PlantUML diagram from a SvelteKit project |
+| `generate` | Generate a D2 diagram from a SvelteKit project |
 | `watch` | Watch files and regenerate diagram on change |
 
 ### Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `-o, --output <path>` | Output file path | `diagram.puml` |
-| `-f, --format <type>` | Output format: `text`, `svg`, `png` | `text` |
+| `-o, --output <path>` | Output file path | `diagram.d2` |
+| `-f, --format <type>` | Output format: `d2`, `svg`, `png` | `d2` |
 | `-d, --diagram <kind>` | Diagram kind: `class`, `package` | `class` |
 | `--class-diagram` | Generate a class diagram (default) | `false` |
 | `--package-diagram` | Generate a package diagram | `false` |
 | `--collapse-members` | Package diagram: show packages only, hide members | `false` |
+| `--readme-annotations` | Package diagram: read per-folder `README.md` `@uml.*` tags | `false` |
 | `--theme <name>` | Built-in color theme (e.g. `signature`) | none |
 | `--grid-columns <n>` | Pack nodes into an n-column grid (compact flat layouts) | none |
 | `-e, --exclude [glob...]` | Glob patterns to exclude from discovery | `[]` |
@@ -53,8 +54,8 @@ svelteuml generate ./my-sveltekit-app -f svg -o diagram.svg
 | `--max-depth <n>` | Max dependency traversal depth (0 = unlimited) | `0` |
 | `--hide-type-deps` | Hide TypeScript type dependencies | `false` |
 | `--hide-state-deps` | Hide Svelte store/state dependencies | `false` |
-| `--focus <name>` | Focus on a specific node and its neighbourhood | — |
-| `--layout-direction <dir>` | Layout direction for PlantUML | `top-to-bottom` |
+| `--focus <name>` | Focus on a specific node and its neighbourhood | none |
+| `--layout-direction <dir>` | Layout direction | `top-to-bottom` |
 | `--detect-circular` | Detect and report circular dependencies | `false` |
 | `--fail-on-circular` | Exit with error code on circular deps | `false` |
 | `--alias-group <value>` | Group symbols by glob pattern into named package (repeatable, format: `PATTERN:NAME`) | `[]` |
@@ -79,7 +80,10 @@ svelteuml generate ./my-app --max-depth 2
 svelteuml generate ./my-app --focus Button
 
 # Package diagram
-svelteuml generate ./my-app --package-diagram -o packages.puml
+svelteuml generate ./my-app --package-diagram -o packages.d2
+
+# Package diagram enriched from folder README.md files
+svelteuml generate ./my-app --package-diagram --readme-annotations
 
 # Watch mode
 svelteuml watch ./my-app
@@ -99,15 +103,15 @@ svelteuml generate ./my-app --exclude-patterns "**/node_modules/**"
 # Left-to-right layout with no colors
 svelteuml generate ./my-app --layout-direction left-to-right --disable-colors
 
-# Pipe PlantUML text to external renderer
-svelteuml generate ./my-app -f text | plantuml -pipe > diagram.svg
+# Emit D2 source to stdout (pipe to the d2 CLI)
+svelteuml generate ./my-app | d2 - diagram.svg
 ```
 
 ## Features
 
 ### Class Diagrams
 
-Default diagram type. Shows classes, interfaces, stores, routes, components, and functions as PlantUML classes with stereotypes and members.
+Default diagram type. Shows classes, interfaces, stores, routes, components, and functions as D2 `shape: class` nodes with stereotypes and members.
 
 ```bash
 svelteuml generate ./my-app
@@ -117,19 +121,46 @@ Classes rendered with visibility (`+`, `-`, `#`), properties, methods, and type 
 
 ### Package Diagrams
 
-Group symbols by their filesystem path into PlantUML `package` blocks. Shows high-level module structure without individual members.
+Group symbols by their filesystem path into D2 container nodes. Shows high-level module structure, optionally without individual members (`--collapse-members`).
 
 ```bash
 svelteuml generate ./my-app --package-diagram
 ```
 
+### Folder README annotations
+
+With `--readme-annotations`, each package looks for `<dir>/README.md` and reads HTML-comment tags to enrich its node:
+
+| Tag | Effect |
+|-----|--------|
+| `<!-- @uml.title: Video Domain -->` | Override the package label |
+| `<!-- @uml.description: Owns video rows -->` | Set a D2 tooltip on the package node |
+| `<!-- @uml.hide -->` | Exclude the package (and its edges) entirely |
+
+```bash
+svelteuml generate ./my-app --package-diagram --readme-annotations
+```
+
+### Naming-pattern stereotypes
+
+A file's name suffix infers a stereotype, applied in both class and package diagrams so domain diagrams read semantically:
+
+| Suffix | Stereotype |
+|--------|------------|
+| `*.repo.ts`, `*.repository.ts` | `repository` |
+| `*.service.ts` | `service` |
+| `*.store.ts` | `store` |
+| `*.guard.ts` | `guard` |
+
+The `signature` theme colors these stereotypes; `--disable-colors` turns theming off.
+
 ### Component Edges
 
-Detects Svelte component imports and draws `-->` arrows from parent to child component.
+Detects Svelte component imports and draws `->` arrows from parent to child component.
 
 ### Store Subscription Edges
 
-Detects `$storeName` auto-subscription in `.svelte` files (the Svelte `$` prefix syntax). Draws `..>` edges from component to store file labeled with the store name.
+Detects `$storeName` auto-subscription in `.svelte` files (the Svelte `$` prefix syntax). Draws dashed `->` edges from component to store file labeled with the store name.
 
 ```bash
 svelteuml generate ./my-app --hide-state-deps  # hide store edges
@@ -137,23 +168,23 @@ svelteuml generate ./my-app --hide-state-deps  # hide store edges
 
 ### Server Load Edges
 
-Tracks data flow from `+page.server.ts` / `+layout.server.ts` to the corresponding `.svelte` page. Detects `$page.data` and `$page.url` usage to draw `..>` edges.
+Tracks data flow from `+page.server.ts` / `+layout.server.ts` to the corresponding `.svelte` page. Detects `$page.data` and `$page.url` usage to draw dashed `->` edges.
 
 ### Slot Edges
 
-Tracks `<slot>` and `<slot name="...">` usage. Draws `..>` edges labeled `slot:<name>` from child component back to parent.
+Tracks `<slot>` and `<slot name="...">` usage. Draws dashed `->` edges labeled `slot:<name>` from child component back to parent.
 
 ### Prop Flow Edges
 
-Tracks prop passing from parent to child. Draws `-->` edges with prop type signatures.
+Tracks prop passing from parent to child. Draws `->` edges with prop type signatures.
 
-```plantuml
-ParentForm --> Button : onClick: (e: Event) => void
+```d2
+ParentForm -> Button: "onClick: (e: Event) => void"
 ```
 
 ### Event Edges
 
-Tracks `createEventDispatcher` usage. Draws `..>` edges from child to parent labeled with event names.
+Tracks `createEventDispatcher` usage. Draws dashed `->` edges from child to parent labeled with event names.
 
 ### Circular Dependency Detection
 
@@ -168,7 +199,7 @@ With `--fail-on-circular`, exits with code 1 (useful for CI gates).
 
 ### Alias Grouping
 
-Respects SvelteKit path aliases (`$lib`, `$components`, custom). Components under an alias are grouped into a PlantUML `package` with the alias name. Configurable via `aliasOverrides`.
+Respects SvelteKit path aliases (`$lib`, `$components`, custom). Components under an alias are grouped into a D2 container node with the alias name. Configurable via `aliasOverrides`.
 
 ### Config File Support
 
@@ -204,9 +235,9 @@ Annotate Svelte components with HTML comments to control diagram behavior:
 
 | Format | Extension | Requires | Description |
 |--------|-----------|----------|-------------|
-| `text` | `.puml` | Nothing | Raw PlantUML DSL text |
-| `svg` | `.svg` | PlantUML server (remote) | Vector graphic |
-| `png` | `.png` | PlantUML server (remote) | Raster graphic |
+| `d2` | `.d2` | Nothing | Raw D2 DSL text |
+| `svg` | `.svg` | `d2` CLI on PATH | Vector graphic |
+| `png` | `.png` | `d2` CLI on PATH | Raster graphic |
 
 ```bash
 # SVG output
@@ -215,8 +246,8 @@ svelteuml generate ./my-app -f svg -o diagram.svg
 # PNG output
 svelteuml generate ./my-app -f png -o diagram.png
 
-# Text to stdout (pipe to other tools)
-svelteuml generate ./my-app -f text > diagram.puml
+# D2 source to stdout (pipe to other tools)
+svelteuml generate ./my-app > diagram.d2
 ```
 
 ## Configuration Reference
@@ -226,7 +257,7 @@ Create `.svelteumlrc.json` in your project root:
 ```json
 {
   "targetDir": "./src",
-  "outputPath": "docs/architecture.puml",
+  "outputPath": "docs/architecture.d2",
   "exclude": ["**/*.test.ts", "**/*.spec.ts"],
   "include": [],
   "maxDepth": 3,
@@ -247,7 +278,7 @@ Create `.svelteumlrc.json` in your project root:
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `targetDir` | `string` | `process.cwd()` | Path to SvelteKit project root |
-| `outputPath` | `string` | `"diagram.puml"` | Output file path |
+| `outputPath` | `string` | `"diagram.d2"` | Output file path |
 | `exclude` | `string[]` | `[]` | Glob patterns to exclude from discovery |
 | `include` | `string[]` | `[]` | Additional glob patterns to include |
 | `maxDepth` | `number` | `0` | Max dependency traversal depth (0 = unlimited) |
@@ -261,65 +292,47 @@ CLI flags always override config file values.
 
 ### Class Diagram
 
-Generated from a SvelteKit project — shows components, stores, routes, functions, and their relationships:
+Generated from a SvelteKit project: shows components, stores, routes, functions, and their relationships:
 
-![Sample Class Diagram](docs/sample-class.png)
+![Sample Class Diagram](docs/sample-class.svg)
 
-*PlantUML source: [docs/sample-class.puml](docs/sample-class.puml)*
+*D2 source: [docs/sample-class.d2](docs/sample-class.d2)*
 
 ### Package Diagram
 
 High-level module structure grouped by filesystem path:
 
-![Sample Package Diagram](docs/sample-package.png)
+![Sample Package Diagram](docs/sample-package.svg)
 
-*PlantUML source: [docs/sample-package.puml](docs/sample-package.puml)*
+*D2 source: [docs/sample-package.d2](docs/sample-package.d2)*
 
 Generate your own:
 
 ```bash
-pnpm dlx svelteuml generate ./my-sveltekit-app -d class -o diagram.puml
-pnpm dlx svelteuml generate ./my-sveltekit-app -d package -o packages.puml
+pnpm dlx svelteuml generate ./my-sveltekit-app -d class -o diagram.d2
+pnpm dlx svelteuml generate ./my-sveltekit-app -d package -o packages.d2
 ```
 
 ## Example Output
 
-```plantuml
-@startuml Diagram
-skinparam classAttributeIconSize 0
-
-package "routes" {
-  package "(auth)" {
-    class "+page" <<page>> {
-      +load(): PageLoad
-    }
-    class "+layout" <<layout>> {
-      +load(): LayoutLoad
-    }
-  }
-  package "api/users" {
-    class "+server" <<endpoint>> {
-      +GET(): RequestHandler
-      +POST(): RequestHandler
-    }
-  }
+```d2
+# Diagram
+auth: {
+  shape: class
+  label: "auth"
+  class: [store; Exported]
+  "storeType": "writable"
+  "valueType": "User"
+}
+Button: {
+  shape: class
+  label: "Button"
+  class: [component]
+  "+ label": "string"
+  "+ disabled?": "boolean"
 }
 
-package "$lib" {
-  class "stores/auth" <<store>> {
-    storeType: writable
-    valueType: User
-  }
-  class "components/Button" <<component>> {
-    +label: string
-    +disabled?: boolean
-  }
-}
-
-"+page" ..> "stores/auth" : store
-"+layout" ..> "stores/auth" : store
-"+page" ..> "+layout" : session
-@enduml
+Button -> auth: "store" { style.stroke-dash: 3 }
 ```
 
 ## Architecture
@@ -330,17 +343,17 @@ SvelteUML uses a 5-phase pipeline:
 ┌─────────────┐    ┌───────────┐    ┌─────────────┐    ┌────────────┐    ┌───────────┐
 │  Discovery  │───>│  Parsing  │───>│  Extraction │───>│ Resolution │───>│ Emission  │
 │             │    │           │    │             │    │            │    │           │
-│ Find files  │    │ svelte2tsx│    │  Symbols    │    │  Edges     │    │ PlantUML  │
+│ Find files  │    │ svelte2tsx│    │  Symbols    │    │  Edges     │    │ D2 DSL    │
 │ Load config │    │ ts-morph  │    │  Props      │    │  Imports   │    │  DSL      │
 │ Aliases     │    │ VFS       │    │  Routes     │    │  Reactive  │    │  SVG/PNG  │
 └─────────────┘    └───────────┘    └─────────────┘    └────────────┘    └───────────┘
 ```
 
-1. **Discovery** — Recursively find `.svelte`, `.ts`, `.js` files. Load `svelte.config.js` and `.svelte-kit/tsconfig.json` for path aliases.
-2. **Parsing** — Transform `.svelte` SFCs to TSX via `svelte2tsx`. Build a `ts-morph` Project with virtual file system.
-3. **Extraction** — Extract components, props, stores, routes, server endpoints, lib functions, classes, events.
-4. **Resolution** — Scan imports, build dependency edges (composition, inheritance, type, store, server-load, prop-flow, slot, event). Track reactive `$state`/`$derived` cross-file references.
-5. **Emission** — Generate PlantUML DSL with nested packages, stereotypes, relationship arrows. Optionally render to SVG/PNG.
+1. **Discovery** : Recursively find `.svelte`, `.ts`, `.js` files. Load `svelte.config.js` and `.svelte-kit/tsconfig.json` for path aliases.
+2. **Parsing** : Transform `.svelte` SFCs to TSX via `svelte2tsx`. Build a `ts-morph` Project with virtual file system.
+3. **Extraction** : Extract components, props, stores, routes, server endpoints, lib functions, classes, events.
+4. **Resolution** : Scan imports, build dependency edges (composition, inheritance, type, store, server-load, prop-flow, slot, event). Track reactive `$state`/`$derived` cross-file references.
+5. **Emission** : Generate D2 DSL with container nodes, stereotypes, relationship arrows. Optionally render to SVG/PNG via the `d2` CLI.
 
 ## Development
 
