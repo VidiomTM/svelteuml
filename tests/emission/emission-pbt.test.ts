@@ -1,6 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { emitD2 } from "../../src/emission/d2-emitter.js";
+import { d2str } from "../../src/emission/d2-utils.js";
 import type { SymbolTable } from "../../src/types/ast.js";
 import type { DiagramOptions, LayoutDirection } from "../../src/types/diagram.js";
 import { DEFAULT_STEREOTYPE_COLORS } from "../../src/types/diagram.js";
@@ -110,14 +111,15 @@ describe("Emission PBT", () => {
 				fc.pre(opts.kind === "class");
 				const result = emitD2(graph.symbols, graph.edges, opts);
 				const content = result.content;
+				// Names appear in their D2-escaped form (quotes/backslashes escaped).
 				for (const cls of graph.symbols.classes) {
-					expect(content).toContain(cls.name);
+					expect(content).toContain(d2str(cls.name));
 				}
 				for (const fn of graph.symbols.functions) {
-					expect(content).toContain(fn.name);
+					expect(content).toContain(d2str(fn.name));
 				}
 				for (const route of graph.symbols.routes) {
-					expect(content).toContain(route.name);
+					expect(content).toContain(d2str(route.name));
 				}
 			}),
 			{ numRuns },
