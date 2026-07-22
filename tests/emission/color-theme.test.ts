@@ -58,4 +58,11 @@ describe("renderColorLegend", () => {
 		const result = renderColorLegend({ "bad<<name>>": "invalid" });
 		expect(result).toContain("bad__name__=#666666");
 	});
+
+	it("uses dark font on light fills and light font on dark fills", () => {
+		const light = renderColorTheme({ component: "#8be9fd" });
+		expect(light).toContain(`font-color: "#1a1a2e"`);
+		const dark = renderColorTheme({ function: "#6272a4" });
+		expect(dark).toContain(`font-color: "#f5f5fa"`);
+	});
 });

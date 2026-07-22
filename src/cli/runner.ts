@@ -23,6 +23,7 @@ import {
 	resolveGlobalScope,
 } from "../emission/focus.js";
 import { renderD2 } from "../emission/renderer.js";
+import { getTheme } from "../emission/themes.js";
 import { SymbolExtractor } from "../extraction/symbol-extractor.js";
 import { convertFiles } from "../parsing/svelte-to-tsx.js";
 import { buildParsingProject } from "../parsing/ts-morph-project.js";
@@ -229,13 +230,17 @@ export async function runPipeline(
 		r.succeed(`Resolved ${edges.length} dependencies`);
 
 		r.startPhase("emission", 0);
+		const theme = cliOpts.theme ? getTheme(cliOpts.theme) : undefined;
 		const diagramOpts: DiagramOptions = {
 			...DEFAULT_DIAGRAM_OPTIONS,
 			kind: cliOpts.diagram,
 			layoutDirection: cliOpts.layoutDirection,
-			stereotypeColors: cliOpts.noColor ? {} : DEFAULT_STEREOTYPE_COLORS,
+			stereotypeColors: cliOpts.noColor
+				? {}
+				: (theme?.stereotypeColors ?? DEFAULT_STEREOTYPE_COLORS),
 			targetDir: config.targetDir,
 			collapseMembers: cliOpts.collapseMembers,
+			...(theme ? { themeBackground: theme.background, themeEdgeStroke: theme.edgeStroke } : {}),
 			...(config.groups.length > 0 ? { groups: config.groups } : {}),
 		};
 
