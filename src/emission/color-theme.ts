@@ -35,9 +35,11 @@ const FONT_COLOR = "#f5f5fa";
 // color becomes the border, not the fill, which is what makes the output look
 // designed instead of a wall of solid blocks.
 const NODE_SURFACE = "#24243e";
-const NODE_RADIUS = 10;
 const NODE_STROKE_WIDTH = 2;
-const NODE_FONT_SIZE = 15;
+// Shared with d2-emitter's global node defaults so containers without a
+// stereotype class match the per-stereotype nodes. Single source of truth.
+export const NODE_RADIUS = 10;
+export const NODE_FONT_SIZE = 15;
 
 // Hyphens are invalid in D2 class identifiers, so collapse to underscore.
 export function sanitizeStereotype(s: string): string {

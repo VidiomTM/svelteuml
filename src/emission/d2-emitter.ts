@@ -4,7 +4,7 @@ import { DEFAULT_DIAGRAM_OPTIONS } from "../types/diagram.js";
 import type { EdgeSet } from "../types/edge.js";
 import type { EmissionResult } from "../types/pipeline.js";
 import { renderClassDiagram } from "./class-diagram.js";
-import { renderColorLegend, renderColorTheme } from "./color-theme.js";
+import { NODE_FONT_SIZE, NODE_RADIUS, renderColorLegend, renderColorTheme } from "./color-theme.js";
 import { renderLayoutDirective } from "./layout-hints.js";
 import { renderPackageDiagram } from "./package-diagram.js";
 
@@ -42,8 +42,8 @@ function injectThemeBlock(d2: string, opts: DiagramOptions): string {
 		insertions.push(`style: { fill: "${opts.themeBackground}" }`);
 		// Global node defaults so containers/packages without a stereotype class
 		// still read as rounded surface cards (matches the per-stereotype classes).
-		insertions.push("**.style.border-radius: 10");
-		insertions.push("**.style.font-size: 15");
+		insertions.push(`**.style.border-radius: ${NODE_RADIUS}`);
+		insertions.push(`**.style.font-size: ${NODE_FONT_SIZE}`);
 	}
 
 	if (opts.gridColumns && opts.gridColumns > 0) {
