@@ -23,7 +23,14 @@ export async function renderD2(
 
 	try {
 		writeFileSync(inputPath, source, "utf-8");
-		await execFileAsync("d2", [inputPath, outputPath], { timeout: timeoutMs });
+		// elk gives clean orthogonal routing + even spacing; pad adds breathing
+		// room; sketch off keeps lines crisp (hand-drawn wobble reads as sloppy,
+		// not polished). Colors/shapes are set in the D2 source, not a d2 theme.
+		await execFileAsync(
+			"d2",
+			["--layout=elk", "--pad=48", "--sketch=false", inputPath, outputPath],
+			{ timeout: timeoutMs },
+		);
 		const data = readFileSync(outputPath, format === "svg" ? "utf-8" : "base64");
 		if (!data || data.length === 0) {
 			return { success: false, error: "d2 produced empty output" };

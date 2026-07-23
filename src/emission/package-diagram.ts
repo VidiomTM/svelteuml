@@ -42,6 +42,7 @@ export function renderPackageDiagram(
 		const sortedMembers = [...members.values()].sort((a, b) => a.name.localeCompare(b.name));
 		lines.push(`${sanitizeId(pkg)}: {`);
 		lines.push(`  label: "${d2str(annotation?.title ?? pkg)}"`);
+		lines.push("  class: package");
 		if (annotation?.description) {
 			lines.push(`  tooltip: "${d2str(annotation.description)}"`);
 		}

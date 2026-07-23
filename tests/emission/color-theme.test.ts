@@ -10,8 +10,10 @@ describe("renderColorTheme", () => {
 		const colors = { component: "#4A90D9", store: "#E67E22" };
 		const result = renderColorTheme(colors);
 		expect(result).toContain("classes: {");
-		expect(result).toContain(`component: { style: { fill: "#4A90D9"; font-color: "#f5f5fa" } }`);
-		expect(result).toContain(`store: { style: { fill: "#E67E22"; font-color: "#f5f5fa" } }`);
+		// Stereotype color is the border; fill + font are the uniform surface.
+		expect(result).toContain(`component: { style: { fill: "#24243e"; stroke: "#4A90D9";`);
+		expect(result).toContain(`store: { style: { fill: "#24243e"; stroke: "#E67E22";`);
+		expect(result).toContain(`font-color: "#f5f5fa"`);
 	});
 
 	it("renders all provided stereotype colors", () => {
@@ -33,12 +35,12 @@ describe("renderColorTheme", () => {
 
 	it("sanitizes invalid color to fallback", () => {
 		const result = renderColorTheme({ component: "not-a-valid-color" });
-		expect(result).toContain(`fill: "#666666"`);
+		expect(result).toContain(`stroke: "#666666"`);
 	});
 
 	it("allows named colors", () => {
 		const result = renderColorTheme({ component: "red" });
-		expect(result).toContain(`fill: "red"`);
+		expect(result).toContain(`stroke: "red"`);
 	});
 });
 
@@ -59,10 +61,12 @@ describe("renderColorLegend", () => {
 		expect(result).toContain("bad__name__=#666666");
 	});
 
-	it("uses dark font on light fills and light font on dark fills", () => {
-		const light = renderColorTheme({ component: "#8be9fd" });
-		expect(light).toContain(`font-color: "#1a1a2e"`);
-		const dark = renderColorTheme({ function: "#6272a4" });
-		expect(dark).toContain(`font-color: "#f5f5fa"`);
+	it("puts the stereotype color on the border and keeps a uniform light font", () => {
+		const cyan = renderColorTheme({ component: "#8be9fd" });
+		expect(cyan).toContain(`stroke: "#8be9fd"`);
+		expect(cyan).toContain(`font-color: "#f5f5fa"`);
+		const muted = renderColorTheme({ function: "#6272a4" });
+		expect(muted).toContain(`stroke: "#6272a4"`);
+		expect(muted).toContain(`font-color: "#f5f5fa"`);
 	});
 });

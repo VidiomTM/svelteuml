@@ -6,5 +6,8 @@ export function namingStereotype(filePath: string): string | undefined {
 	if (/\.service\.ts$/.test(normalized)) return "service";
 	if (/\.store\.ts$/.test(normalized)) return "store";
 	if (/\.guard\.ts$/.test(normalized)) return "guard";
+	// Svelte 5 rune modules hold reactive state; treat them as stores so they
+	// color consistently without forcing a *.store.ts rename.
+	if (/\.svelte\.(ts|js)$/.test(normalized)) return "store";
 	return undefined;
 }

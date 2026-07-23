@@ -6,7 +6,7 @@ direction: down
 CartItem: {
   shape: class
   label: "CartItem"
-  class: interface
+  class: [store; interface]
   "+ id": "string"
   "+ name": "string"
   "+ quantity": "number"
@@ -22,7 +22,7 @@ Product: {
 cart: {
   shape: class
   label: "cart"
-  class: state
+  class: [store; state]
   "storeType": "writable"
   "valueType": "{ length: number }"
 }
@@ -74,7 +74,7 @@ Header: {
 addItem: {
   shape: class
   label: "addItem"
-  class: [function; Exported]
+  class: [store; function; Exported]
 }
 addProduct: {
   shape: class
@@ -84,7 +84,7 @@ addProduct: {
 clearCart: {
   shape: class
   label: "clearCart"
-  class: [function; Exported]
+  class: [store; function; Exported]
 }
 formatDate: {
   shape: class
@@ -109,7 +109,7 @@ POST: {
 removeItem: {
   shape: class
   label: "removeItem"
-  class: [function; Exported]
+  class: [store; function; Exported]
 }
 slugify: {
   shape: class
@@ -149,23 +149,25 @@ exports[`E4.6 — Snapshot tests on fixture corpus (round-trip lock-in) > packag
 direction: down
 lib: {
   label: "lib"
-  "addItem": { class: [function; Exported] }
+  class: package
+  "addItem": { class: [store; function; Exported] }
   "addProduct": { class: [function; Exported] }
   "Card": { class: component }
-  "cart": { class: state }
-  "CartItem": { class: interface }
-  "clearCart": { class: [function; Exported] }
+  "cart": { class: [store; state] }
+  "CartItem": { class: [store; interface] }
+  "clearCart": { class: [store; function; Exported] }
   "formatDate": { class: [function; Exported] }
   "Header": { class: component }
   "Product": { class: interface }
   "productCount": { class: store }
   "products": { class: store }
-  "removeItem": { class: [function; Exported] }
+  "removeItem": { class: [store; function; Exported] }
   "slugify": { class: [function; Exported] }
   "truncate": { class: [function; Exported] }
 }
 routes: {
   label: "routes"
+  class: package
   "+error": { class: component }
   "+layout": { class: component }
   "+layout.server": { class: LayoutLoad }
