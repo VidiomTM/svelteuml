@@ -1,7 +1,7 @@
 {
 	"name": "svelteuml",
 	"version": "1.0.0",
-	"description": "Architecture and Dependency Visualization for SvelteKit: TypeScript-Native PlantUML Generator",
+	"description": "Architecture and Dependency Visualization for SvelteKit: TypeScript-Native D2 Diagram Generator",
 	"type": "module",
 	"main": "dist/index.js",
 	"exports": {
@@ -42,8 +42,10 @@
 	"keywords": [
 		"svelte",
 		"sveltekit",
-		"plantuml",
-		"uml",
+		"d2",
+		"d2lang",
+		"diagrams",
+		"architecture",
 		"visualization",
 		"static-analysis"
 	],

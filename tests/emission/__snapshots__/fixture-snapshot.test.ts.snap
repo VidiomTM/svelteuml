@@ -40,20 +40,20 @@ products: {
   "storeType": "writable"
   "valueType": "Product[]"
 }
-_error: {
+"+error": {
   shape: class
   label: "+error"
   class: [component]
   "+ error": "unknown"
   "+ status": "unknown"
 }
-_layout: {
+"+layout": {
   shape: class
   label: "+layout"
   class: [component]
   "+ children": "unknown"
 }
-_page: {
+"+page": {
   shape: class
   label: "+page"
   class: [component]
@@ -121,27 +121,27 @@ truncate: {
   label: "truncate"
   class: [function; Exported]
 }
-_layout_server: {
+"+layout.server": {
   shape: class
   label: "+layout.server"
   class: LayoutLoad
   "path": "/"
 }
-_page_server: {
+"+page.server": {
   shape: class
   label: "+page.server"
   class: PageLoad
   "path": "/products/[id]"
   "dynamic id": ""
 }
-_server: {
+"+server": {
   shape: class
   label: "+server"
   class: endpoint
   "path": "/api/items"
 }
-_page -> removeItem: "$cart <<store-subscription>>" { style.stroke-dash: 3 }
-_page -> addProduct: "$products <<store-subscription>>" { style.stroke-dash: 3 }"
+"+page" -> removeItem: "$cart <<store-subscription>>" { style.stroke-dash: 3 }
+"+page" -> addProduct: "$products <<store-subscription>>" { style.stroke-dash: 3 }"
 `;
 
 exports[`E4.6 — Snapshot tests on fixture corpus (round-trip lock-in) > package diagram on sveltekit-synthetic fixture > snapshot locks package diagram output 1`] = `

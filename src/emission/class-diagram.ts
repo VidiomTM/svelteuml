@@ -10,7 +10,7 @@ import type { DiagramOptions } from "../types/diagram.js";
 import type { EdgeSet, EdgeType } from "../types/edge.js";
 import { normalizeFilePath } from "../utils/path.js";
 import { sanitizeStereotype } from "./color-theme.js";
-import { d2str, renderClassRef } from "./d2-utils.js";
+import { d2str, renderClassRef, sanitizeId } from "./d2-utils.js";
 import { routeStereotype } from "./route-utils.js";
 import { applyFocusFilter, filterHiddenComponents } from "./tag-processor.js";
 
@@ -389,10 +389,6 @@ function mapVisibility(vis: string, show: boolean): string {
 		default:
 			return "+ ";
 	}
-}
-
-function sanitizeId(name: string): string {
-	return name.replace(/[^a-zA-Z0-9_]/g, "_").replace(/_+/g, "_");
 }
 
 function groupPropsByComponent(props: PropSymbol[]): Map<string, PropSymbol[]> {

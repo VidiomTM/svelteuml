@@ -5,7 +5,7 @@ import type { SymbolTable } from "../types/ast.js";
 import type { DiagramOptions } from "../types/diagram.js";
 import type { EdgeSet } from "../types/edge.js";
 import { normalizeFilePath } from "../utils/path.js";
-import { d2str, renderClassRef } from "./d2-utils.js";
+import { d2str, renderClassRef, sanitizeId } from "./d2-utils.js";
 import { getGroupForFile } from "./groups.js";
 import { routeStereotype } from "./route-utils.js";
 
@@ -172,8 +172,4 @@ function extractPackage(filePath: string): string | undefined {
 		return parts[0];
 	}
 	return undefined;
-}
-
-function sanitizeId(path: string): string {
-	return path.replace(/[^a-zA-Z0-9_]/g, "_").replace(/_+/g, "_");
 }
